@@ -40,6 +40,15 @@ THREE.ModelLoader.prototype = {
 
 	constructor: THREE.ColladaLoader,
 
+	toCacheKey: function ( url ) {
+
+		// https://stackoverflow.com/questions/14780350/convert-relative-path-to-absolute-using-javascript
+		this.linkTag = this.linkTag || document.createElement( 'a' );
+		this.linkTag.href = url;
+		return this.linkTag.href;
+
+	}
+
 	cloneResult: function ( argsarr ) {
 
 		return argsarr.map( r => {
@@ -51,6 +60,8 @@ THREE.ModelLoader.prototype = {
 			
 			} else if ( 'scene' in r ) {
 
+				// Handle the 'ColladaLoader' case where more than
+				// just the geometry is returned
 				return Object.assign( {}, r, { scene: r.scene.clone() } );
 
 			} else {
@@ -107,9 +118,10 @@ THREE.ModelLoader.prototype = {
 
 		// Grab the processed data from the cache if it's been
 		// loaded already
-		if ( this.modelCache[ url ] != null ) {
+		var cachekey = this.toCacheKey( url );
+		if ( this.modelCache[ cachekey ] != null ) {
 
-			var args = this.modelCache[ url ];
+			var args = this.modelCache[ cachekey ];
 			requestAnimationFrame( () => onLoad( ...this.cloneResult( args ) ) );
 			return;
 
@@ -134,10 +146,7 @@ THREE.ModelLoader.prototype = {
 			// TODO: set the cross origin etc information
 			loader.load( url, ( ...args ) => {
 
-				// TODO: this cache url might be relative sometimes
-				// or absolute others. We should resolve to the absolute
-				// path in order to properly cache
-				this.modelCache[ url ] = this.cloneResult( args );
+				this.modelCache[ cachekey ] = this.cloneResult( args );
 				onLoad( ...args );
 
 			}, onProgress, onError );
