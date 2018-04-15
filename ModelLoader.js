@@ -5,143 +5,143 @@
 
 THREE.ModelLoader = function ( manager ) {
 
-    this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;
+	this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;
 
-    this.modelCache = {};
+	this.modelCache = {};
 
-    this.cachedLoaders = {};
-    this.loaderMap = {
+	this.cachedLoaders = {};
+	this.loaderMap = {
 
-        'assimp':   'AssimpLoader',
-        'babylon':  'BabylonLoader',
-        'dae':      'ColladaLoader',
-        'drc':      'DracoLoader',
-        'fbx':      'FBXLoader',
-        'gltf':     'GLTFLoader',
-        'kmz':      'KMZLoader',
-        'md2':      'MD2Loader',
-        'mmd':      'MMDLoader',
-        'obj':      'OBJLoader2',
-        'ply':      'PLYLoader',
-        'pcd':      'PCDLoader',
-        'pdb':      'PDBLoader',
-        'prwm':     'PRWMLoader',
-        'stl':      'STLLoader',
-        'tds':      'TDSLoader',
-        'vtk':      'VTKLoader',
-        'x':        'XLoader',
-        'zae':      'ColladaArchiveLoader',
+		'assimp': 'AssimpLoader',
+		'babylon': 'BabylonLoader',
+		'dae': 'ColladaLoader',
+		'drc': 'DracoLoader',
+		'fbx': 'FBXLoader',
+		'gltf': 'GLTFLoader',
+		'kmz': 'KMZLoader',
+		'md2': 'MD2Loader',
+		'mmd': 'MMDLoader',
+		'obj': 'OBJLoader2',
+		'ply': 'PLYLoader',
+		'pcd': 'PCDLoader',
+		'pdb': 'PDBLoader',
+		'prwm': 'PRWMLoader',
+		'stl': 'STLLoader',
+		'tds': 'TDSLoader',
+		'vtk': 'VTKLoader',
+		'x': 'XLoader',
+		'zae': 'ColladaArchiveLoader',
 
-    };
+	};
 
-}
+};
 
-THREE.ModelLoader.prototype = { 
+THREE.ModelLoader.prototype = {
 
-    constructor: THREE.ColladaLoader,
+	constructor: THREE.ColladaLoader,
 
-    getLoader: function ( loaderName, manager, loadercb ) {
+	getLoader: function ( loaderName, manager, loadercb ) {
 
-        loadercb( new THREE[ loaderName ]( manager ) );
+		loadercb( new THREE[ loaderName ]( manager ) );
 
-    },
+	},
 
-    extToLoader: function ( ext, maanger, loadercb, onError ) {
+	extToLoader: function ( ext, maanger, loadercb, onError ) {
 
-        // Get the name of the loader we need
-        var loaderName = this.loaderMap[ext] || null;
-        if ( loaderName == null ) {
+		// Get the name of the loader we need
+		var loaderName = this.loaderMap[ ext ] || null;
+		if ( loaderName == null ) {
 
-            onError( new Error( `Model Loader : No loader specified for '${ ext }' extension` ) );
+			onError( new Error( `Model Loader : No loader specified for '${ ext }' extension` ) );
 
-            return;
+			return;
 
-        }
+		}
 
-        // If the loader isn't already cached the lets load it
-        var loader = this.cachedLoaders[ loaderName ] || null;
+		// If the loader isn't already cached the lets load it
+		var loader = this.cachedLoaders[ loaderName ] || null;
 
-        if ( loader != null ) {
-        
-            loadercb( loader );
-        
-        } else {
+		if ( loader != null ) {
 
-            this.getLoader( loaderName, this.manager, loader => {
-            
-                this.cachedLoaders[ loaderName ] = loader;
-                loadercb( loader );
+			loadercb( loader );
 
-            });
+		} else {
 
-        }
+			this.getLoader( loaderName, this.manager, loader => {
 
-    },
+				this.cachedLoaders[ loaderName ] = loader;
+				loadercb( loader );
 
-    load: function ( url, onLoad, onProgress, onError, extOverride = null ) {
+			} );
 
-        onError = onError || ( e => console.error( e ) );
+		}
 
-        // Grab the processed data from the cache if it's been
-        // loaded already
-        if ( this.modelCache[ url ] != null ) {
-        
-            // TODO: Go through and make copies of the THREEjs models here?
-            // Or do that for the cached stuff?
-            var args = this.modelCache[ url ];
-            requestAnimationFrame(() => onLoad(...args))
-            return;
+	},
 
-        }
+	load: function ( url, onLoad, onProgress, onError, extOverride = null ) {
 
-        // Get the extension associated the file so we can get the
-        // appropriate loader
-        var extMatches = url.match(/\.([^\.\/\\]+)$/);
-        var urlext = extMatches ? extMatches[1] : null;
-        var ext = extOverride || urlext
+		onError = onError || ( e => console.error( e ) );
 
-        if ( url == null ) {
+		// Grab the processed data from the cache if it's been
+		// loaded already
+		if ( this.modelCache[ url ] != null ) {
 
-            onError( new Error( 'Model Loader : No file extension found' ) );
-            return;
+			// TODO: Go through and make copies of the THREEjs models here?
+			// Or do that for the cached stuff?
+			var args = this.modelCache[ url ];
+			requestAnimationFrame( () => onLoad( ...args ) );
+			return;
 
-        }
+		}
+
+		// Get the extension associated the file so we can get the
+		// appropriate loader
+		var extMatches = url.match( /\.([^\.\/\\]+)$/ );
+		var urlext = extMatches ? extMatches[ 1 ] : null;
+		var ext = extOverride || urlext;
+
+		if ( url == null ) {
+
+			onError( new Error( 'Model Loader : No file extension found' ) );
+			return;
+
+		}
 
 
-        this.extToLoader( ext, this.manager, loader => {
-            
-            // TODO: set the cross origin etc information
-            loader.load( url, ( ...args ) => {
-                
-                // TODO: this cache url might be relative sometimes
-                // or absolute others. We should resolve to the absolute
-                // path in order to properly cache
-                this.modelCache[ url ] = args;
-                onLoad( ...args );
+		this.extToLoader( ext, this.manager, loader => {
 
-            }, onProgress, onError );
-        
-        }, onError );
+			// TODO: set the cross origin etc information
+			loader.load( url, ( ...args ) => {
 
-    },
+				// TODO: this cache url might be relative sometimes
+				// or absolute others. We should resolve to the absolute
+				// path in order to properly cache
+				this.modelCache[ url ] = args;
+				onLoad( ...args );
 
-    parse: function ( data, ext, onLoad, onError ) {
+			}, onProgress, onError );
 
-        onError = onError || ( e => console.error( e ) );
-        
-        this.extToLoader( ext, this.manager, loader => {
+		}, onError );
 
-            onLoad( loader.parse( data ) );
+	},
 
-        }, onError );
+	parse: function ( data, ext, onLoad, onError ) {
 
-    },
+		onError = onError || ( e => console.error( e ) );
 
-    // Clear the model cache
-    clear: function () {
+		this.extToLoader( ext, this.manager, loader => {
 
-        this.modelCache = {};
+			onLoad( loader.parse( data ) );
 
-    }
+		}, onError );
 
-}
+	},
+
+	// Clear the model cache
+	clear: function () {
+
+		this.modelCache = {};
+
+	}
+
+};
