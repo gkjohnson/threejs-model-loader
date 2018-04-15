@@ -13,7 +13,7 @@ loader.getLoader = function( loaderName, manager, loadercb ) {
 
     function createLoader() {
     
-        return new THREE[loaderName]( manager );
+        return new THREE[ loaderName ]( manager );
         
     }
 
@@ -25,7 +25,7 @@ loader.getLoader = function( loaderName, manager, loadercb ) {
             .then(res => res.text())
             .then(tex => {
 
-                eval(text);
+                eval( text );
                 loadercb( createLoader() );
             
             });
