@@ -40,6 +40,29 @@ THREE.ModelLoader.prototype = {
 
 	constructor: THREE.ColladaLoader,
 
+	cloneResult: function ( argsarr ) {
+
+		return argsarr.map( r => {
+
+			var obj = null;
+			if ( r.isObject3D ) {
+
+				return obj.clone();
+			
+			} else if ( 'scene' in r ) {
+
+				return Object.assign( {}, r, { scene: r.scene.clone() } );
+
+			} else {
+
+				return Object.assign( {}, r );
+
+			}
+
+		} );
+
+	},
+
 	getLoader: function ( loaderName, manager, loadercb ) {
 
 		loadercb( new THREE[ loaderName ]( manager ) );
@@ -86,10 +109,8 @@ THREE.ModelLoader.prototype = {
 		// loaded already
 		if ( this.modelCache[ url ] != null ) {
 
-			// TODO: Go through and make copies of the THREEjs models here?
-			// Or do that for the cached stuff?
 			var args = this.modelCache[ url ];
-			requestAnimationFrame( () => onLoad( ...args ) );
+			requestAnimationFrame( () => onLoad( ...this.cloneResult( args ) ) );
 			return;
 
 		}
@@ -116,7 +137,7 @@ THREE.ModelLoader.prototype = {
 				// TODO: this cache url might be relative sometimes
 				// or absolute others. We should resolve to the absolute
 				// path in order to properly cache
-				this.modelCache[ url ] = args;
+				this.modelCache[ url ] = this.cloneResult( args );
 				onLoad( ...args );
 
 			}, onProgress, onError );
