@@ -47,7 +47,7 @@ THREE.ModelLoader.prototype = {
 		this.linkTag.href = url;
 		return this.linkTag.href;
 
-	}
+	},
 
 	cloneResult: function ( argsarr ) {
 
