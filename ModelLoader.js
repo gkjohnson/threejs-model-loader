@@ -38,6 +38,37 @@ THREE.ModelLoader.prototype = {
 
     },
 
+    extToLoader: function ( ext, maanger, loadercb ) {
+
+        // Get the name of the loader we need
+        var loaderName = this.loaderMap[ext] || null;
+        if ( loaderName == null ) {
+
+            console.error( `Model Loader : No loader specified for '${ ext }' extension` );
+            return;
+
+        }
+
+        // If the loader isn't already cached the lets load it
+        var loader = this.cachedLoaders[ loaderName ] || null;
+
+        if ( loader != null ) {
+        
+            loadercb( loader );
+        
+        } else {
+
+            this.getLoader( loaderName, this.manager, loader => {
+            
+                this.cachedLoaders[ loaderName ] = loader;
+                loadercb( loader );
+
+            });
+
+        }
+
+    },
+
     load: function ( url, onLoad, onProgress, onError, extOverride = null ) {
 
         // Grab the processed data from the cache if it's been
@@ -65,44 +96,28 @@ THREE.ModelLoader.prototype = {
 
         }
 
-        // Get the name of the loader we need
-        var loaderName = this.loaderMap[ext] || null;
-        if ( loaderName == null ) {
 
-            console.error( `Model Loader : No loader specified for '${ ext }' extension` );
-            return;
-
-        }
-
-        var loadModel = l => {
+        this.extToLoader( ext, loader => {
             
             // TODO: set the cross origin etc information
-            l.load( url, function( ...args ) {
+            loader.load( url, function( ...args ) {
                 
                 this.modelCache[ url ] = args;
                 onLoad( ...args );
 
             }, onProgress, onError );
         
-        }
+        });
 
-        // If the loader isn't already cached the lets load it
-        var loader = this.cachedLoaders[ loaderName ] || null;
+    },
 
-        if ( loader != null ) {
-        
-            loadModel( loader )
-        
-        } else {
+    parse: function ( data, ext, onLoad ) {
 
-            this.getLoader( loaderName, this.manager, loader => {
-            
-                this.cachedLoaders[ loaderName ] = loader;
-                loaderModel( loader );
+        this.extToLoader( ext, loader => {
 
-            });
+            onLoad( loader.parse( data ) );
 
-        }
+        });
 
     },
 
