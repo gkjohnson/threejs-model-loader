@@ -4,6 +4,7 @@
   "description": "Model loader for loading any geometry model format",
   "main": "ModelLoader.js",
   "scripts": {
+    "start": "static-server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

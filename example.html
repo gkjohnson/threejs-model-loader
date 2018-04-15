@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+
+    <script src="./node_modules/three/build/three.min.js"></script>
+    <script src="./ModelLoader.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        #container {
+            position: absolute;
+            width: 100%;
+        }
+
+        #container > * {
+            padding: 5px;
+        }
+
+        #error {
+            background: #E91E63;
+        }
+
+        #error:empty {
+            padding: 0;
+        }
+
+        div {
+            color: white;
+            text-align: center;
+            pointer-events: none;
+            font-family:Monospace;
+            font-size:13px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="error"></div>
+        <div>Drag geometry files to load and view them</div>
+    </div>
+    
+    <script>
+
+        var errorel = document.getElementById( 'error' );
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 2000 );
+        camera.position.set( 8, 10, 8 );
+        camera.lookAt( new THREE.Vector3( 0, 2, 0 ) );
+
+        var ambientLight = new THREE.AmbientLight( 0xcccccc, 0.4 );
+        scene.add( ambientLight );
+
+        var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.8 );
+        directionalLight.position.set( 1, 1, 0 ).normalize();
+        scene.add( directionalLight );
+
+        var rotator = new THREE.Object3D();
+        scene.add( rotator );
+
+        var renderer = new THREE.WebGLRenderer({ antialiasing: true });
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.setClearColor( 0x263238 );
+        document.body.appendChild( renderer.domElement );
+
+        // overriding the getLoader function so loaders can be
+        // loaded as-needed
+        var loader = new THREE.ModelLoader();
+        loader.getLoader = function( loaderName, manager, loadercb ) {
+
+            function createLoader() {
+            
+                return new THREE[loaderName]( manager );
+                
+            }
+
+            if ( THREE[ loaderName ] == null ) {
+
+                // fetch the loader script from the server and run it
+                // if it's not already on the page
+                fetch(`./node_modules/three/examples/js/loaders/${ loaderName }.js`)
+                    .then(res => res.text())
+                    .then(text => {
+
+                        eval(text);
+                        loadercb( createLoader() );
+                    
+                    });
+                    
+            } else {
+
+                loadercb( createLoader() );
+
+            }
+
+        }
+
+        document.addEventListener( 'dragover', e => e.preventDefault());
+        document.addEventListener( 'dragenter', e => e.preventDefault());
+        document.addEventListener( 'drop', e => {
+
+            e.preventDefault();
+
+            rotator.children.forEach( c => rotator.remove( c ) );
+            errorel.innerText = '';
+
+            // Use DataTransfer interface to access the file(s)
+            for ( var i = 0; i < e.dataTransfer.files.length; i ++ ) {
+
+                var file = e.dataTransfer.files[i];
+                var ext = file.name.match(/\.([^\.\\\/]+)$/)[1];
+                var filereader = new FileReader();
+                filereader.addEventListener('loadend', e => {
+                    
+                    loader.parse( e.srcElement.result, ext, m => {
+                    
+                        rotator.add( m.scene ? m.scene : m );
+                    
+                    }, err => {
+
+                        errorel.innerText = err.message;
+
+                    });
+
+                })
+
+                filereader.readAsText( file );
+
+            }
+
+        } );
+
+        window.addEventListener( 'resize', () => {
+
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize( window.innerWidth, window.innerHeight );
+
+        } );
+
+        ( function renderLoop() {
+
+            rotator.rotateY( 0.001 );
+            renderer.render( scene, camera );
+            requestAnimationFrame( renderLoop );
+
+        } )();
+        
+    </script>
+</body>
+</html>

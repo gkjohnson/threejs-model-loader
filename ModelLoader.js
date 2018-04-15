@@ -38,13 +38,14 @@ THREE.ModelLoader.prototype = {
 
     },
 
-    extToLoader: function ( ext, maanger, loadercb ) {
+    extToLoader: function ( ext, maanger, loadercb, onError ) {
 
         // Get the name of the loader we need
         var loaderName = this.loaderMap[ext] || null;
         if ( loaderName == null ) {
 
-            console.error( `Model Loader : No loader specified for '${ ext }' extension` );
+            onError( new Error( `Model Loader : No loader specified for '${ ext }' extension` ) );
+
             return;
 
         }
@@ -71,6 +72,8 @@ THREE.ModelLoader.prototype = {
 
     load: function ( url, onLoad, onProgress, onError, extOverride = null ) {
 
+        onError = onError || ( e => console.error( e ) );
+
         // Grab the processed data from the cache if it's been
         // loaded already
         if ( this.modelCache[ url ] != null ) {
@@ -87,37 +90,42 @@ THREE.ModelLoader.prototype = {
         // appropriate loader
         var extMatches = url.match(/\.([^\.\/\\]+)$/);
         var urlext = extMatches ? extMatches[1] : null;
-        var ext = extOverride || url
+        var ext = extOverride || urlext
 
         if ( url == null ) {
 
-            console.error('Model Loader : No file extension found');
+            onError( new Error( 'Model Loader : No file extension found' ) );
             return;
 
         }
 
 
-        this.extToLoader( ext, loader => {
+        this.extToLoader( ext, this.manager, loader => {
             
             // TODO: set the cross origin etc information
-            loader.load( url, function( ...args ) {
+            loader.load( url, ( ...args ) => {
                 
+                // TODO: this cache url might be relative sometimes
+                // or absolute others. We should resolve to the absolute
+                // path in order to properly cache
                 this.modelCache[ url ] = args;
                 onLoad( ...args );
 
             }, onProgress, onError );
         
-        });
+        }, onError );
 
     },
 
-    parse: function ( data, ext, onLoad ) {
+    parse: function ( data, ext, onLoad, onError ) {
 
-        this.extToLoader( ext, loader => {
+        onError = onError || ( e => console.error( e ) );
+        
+        this.extToLoader( ext, this.manager, loader => {
 
             onLoad( loader.parse( data ) );
 
-        });
+        }, onError );
 
     },
 
