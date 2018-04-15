@@ -1,0 +1,25 @@
+{
+  "name": "threejs-model-loader",
+  "version": "0.0.1",
+  "description": "Model loader for loading any geometry model format",
+  "main": "ModelLoader.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gkjohnson/threejs-model-loader.git"
+  },
+  "author": "Garrett Johnson <garrett.kjohnson@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gkjohnson/threejs-model-loader/issues"
+  },
+  "homepage": "https://github.com/gkjohnson/threejs-model-loader#readme",
+  "devDependencies": {
+    "static-server": "^2.2.1"
+  },
+  "peerDependencies": {
+    "three": "^0.91.0"
+  }
+}
