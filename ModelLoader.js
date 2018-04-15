@@ -13,6 +13,7 @@ THREE.ModelLoader = function ( manager ) {
     this.loaderMap = {
 
         'assimp':   'AssimpLoader',
+        'babylon':  'BabylonLoader',
         'dae':      'ColladaLoader',
         'drc':      'DracoLoader',
         'fbx':      'FBXLoader',
@@ -38,8 +39,6 @@ THREE.ModelLoader = function ( manager ) {
 THREE.ModelLoader.prototype = { 
 
     constructor: THREE.ColladaLoader,
-
-    crossOrigin: 'Anonymous',
 
     getLoader: function ( loaderName, manager, loadercb ) {
 
