@@ -14,13 +14,22 @@ THREE.ModelLoader = function ( manager ) {
 
         'assimp':   'AssimpLoader',
         'dae':      'ColladaLoader',
+        'drc':      'DracoLoader',
+        'fbx':      'FBXLoader',
         'gltf':     'GLTFLoader',
+        'kmz':      'KMZLoader',
+        'md2':      'MD2Loader',
+        'mmd':      'MMDLoader',
         'obj':      'OBJLoader2',
         'ply':      'PLYLoader',
+        'pcd':      'PCDLoader',
+        'pdb':      'PDBLoader',
+        'prwm':     'PRWMLoader',
         'stl':      'STLLoader',
+        'tds':      'TDSLoader',
+        'vtk':      'VTKLoader',
+        'x':        'XLoader',
         'zae':      'ColladaArchiveLoader',
-
-        // TODO: Add more extensions
 
     };
 
