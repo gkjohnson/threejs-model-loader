@@ -1,5 +1,6 @@
 /**
  * @author Garrett Johnson / http://gkjohnson.github.io/
+ * https://github.com/gkjohnson/threejs-model-loader
  */
 
 THREE.ModelLoader = function ( manager ) {
@@ -13,11 +14,11 @@ THREE.ModelLoader = function ( manager ) {
 
         'assimp':   'AssimpLoader',
         'dae':      'ColladaLoader',
-        'zae':      'ColladaArchiveLoader',
         'gltf':     'GLTFLoader',
         'obj':      'OBJLoader2',
         'ply':      'PLYLoader',
-        'stl':      'STLLoader'
+        'stl':      'STLLoader',
+        'zae':      'ColladaArchiveLoader',
 
         // TODO: Add more extensions
 
