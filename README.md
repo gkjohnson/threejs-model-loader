@@ -1,5 +1,6 @@
 # threejs-model-loader
-Model loader for loading any geometry model format
+
+THREE.js Model Loader for loading any geometry format. Uses the file's extension to determine which THREE geometry loader to use.
 
 ## Use
 
@@ -37,3 +38,15 @@ loader.getLoader = function( loaderName, manager, loadercb ) {
 
 }
 ```
+
+#### ModelLoader.load(path, onLoad, onProgress, onError, extOverride)
+
+A function signature that mirrors all the THREE.js geometry loaders. An appriopriate loader is selected based on the file name.
+
+If `extOverride` is set, then that extension is used to select the loader.
+
+#### ModelLoader.parse(data, ext, onLoad, onError)
+
+Takes the `data` to parse into geometry and the associated file extension in `ext`.
+
+The model is returned asynchronously in `onLoad` to support async fetching of the loaders.
