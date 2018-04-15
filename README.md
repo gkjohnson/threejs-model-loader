@@ -1,6 +1,6 @@
 # threejs-model-loader
 
-THREE.js Model Loader for loading any geometry format. Uses the file's extension to determine which THREE geometry loader to use.
+THREE.js Model Loader for delegating to the appropriate geometry loader. Uses the file's extension to determine which THREE geometry loader to use.
 
 ## Use
 
