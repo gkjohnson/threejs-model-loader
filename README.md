@@ -39,27 +39,30 @@ loader.getLoader = function( loaderName, manager, loadercb ) {
 }
 ```
 
-#### ModelLoader.load(path, onLoad, onProgress, onError, extOverride)
+### Functions
+##### ModelLoader.load(path, onLoad, onProgress, onError, extOverride)
 
 A function signature that mirrors all the THREE.js geometry loaders. An appriopriate loader is selected based on the file name.
 
 If `extOverride` is set, then that extension is used to select the loader.
 
-#### ModelLoader.parse(data, ext, onLoad, onError)
+##### ModelLoader.parse(data, ext, onLoad, onError)
 
 Takes the `data` to parse into geometry and the associated file extension in `ext`.
 
 The model is returned asynchronously in `onLoad` to support async fetching of the loaders.
 
-#### ModelLoader.Clear()
+##### ModelLoader.Clear()
 
 Clears the cached models.
 
-#### ModelLoader.getLoader(loaderName, manager, loadercb) (overrideable)
+### Virtual Methods
+##### ModelLoader.getLoader(loaderName, manager, loadercb)
 
 Function used to return an instance of a particular loader. Once the loader has been created, pass it into `loadercb`. See above code snippet for an example.
 
-#### ModeLoader.loaderMap
+### Members
+##### ModeLoader.loaderMap
 
 List of `extension` to `loaderName`, used to select the loader for each extension. The list can be modified by adding and removing keys from the list. Every loader is expected to be found on the `THREE` object.
 
@@ -68,6 +71,6 @@ loader.loadMap[ 'obj' ] = 'OBJLoader';
 delete loader.loadMap[ 'stl' ];
 ```
 
-#### ModelLoader.modelCache
+##### ModelLoader.modelCache
 
 The list of cached models indexd by the url used to load model. Individual cached models can be cleared by deleting the key.
