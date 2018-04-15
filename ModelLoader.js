@@ -53,10 +53,9 @@ THREE.ModelLoader.prototype = {
 
 		return argsarr.map( r => {
 
-			var obj = null;
 			if ( r.isObject3D ) {
 
-				return obj.clone();
+				return r.clone();
 			
 			} else if ( 'scene' in r ) {
 

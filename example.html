@@ -42,7 +42,8 @@
 <body>
 	<div id="container">
 		<div id="error"></div>
-		<div>Drag geometry files to load and view them</div>
+		<div>Drag geometry files to load and view them </br>
+		( Files with external dependencies will not load )</div>
 	</div>
 	
 	<script>
@@ -50,8 +51,8 @@
 		var errorel = document.getElementById( 'error' );
 		var scene = new THREE.Scene();
 		var camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 2000 );
-		camera.position.set( 8, 10, 8 );
-		camera.lookAt( new THREE.Vector3( 0, 2, 0 ) );
+		camera.position.set( 4, 5, 4 );
+		camera.lookAt( new THREE.Vector3( 0, 0, 0 ) );
 
 		var ambientLight = new THREE.AmbientLight( 0xcccccc, 0.4 );
 		scene.add( ambientLight );
@@ -80,18 +81,31 @@
 
 			}
 
+			function getSource( name ) {
+				
+				var f =
+					fetch( `./node_modules/three/examples/js/loaders/${ name }.js` )
+						.then( res => res.text() )
+				f.then( text => eval( text ) );
+
+				return f;
+
+			}
+
 			if ( THREE[ loaderName ] == null ) {
 
-				// fetch the loader script from the server and run it
-				// if it's not already on the page
-				fetch( `./node_modules/three/examples/js/loaders/${ loaderName }.js` )
-					.then( res => res.text() )
-					.then( text => {
 
-						eval( text );
-						loadercb( createLoader() );
+				if ( loaderName === 'OBJLoader2' ) {
 
-					} );
+					getSource( 'LoaderSupport' )
+						.then(() => getSource( loaderName ))
+						.then(() => loadercb( createLoader() ));
+
+				} else {
+
+					getSource( loaderName )
+						.then(() => loadercb( createLoader() ));
+				}
 
 			} else {
 
@@ -100,6 +114,42 @@
 			}
 
 		};
+		
+		function computeSceneBoundingSphere(root)
+		{
+
+			var sceneBSCenter = new THREE.Vector3(0, 0, 0), sceneBSRadius = 0;
+			THREE.Object3D.prototype.traverse.call( root, function (object) {
+			
+				if (object instanceof THREE.Mesh) {
+			
+					// Object radius
+					object.geometry.computeBoundingSphere();
+					var radius = object.geometry.boundingSphere.radius;
+
+					// Object center in world space
+					var objectCenterLocal = object.position.clone();
+					var objectCenterWorld = object.matrixWorld.multiplyVector3(objectCenterLocal);
+
+					// New center in world space
+					var newCenter = new THREE.Vector3();
+					newCenter.add(sceneBSCenter, objectCenterWorld);
+					newCenter.divideScalar(2.0);
+
+					// New radius in world space
+					var dCenter = newCenter.distanceTo(sceneBSCenter);
+					var newRadius = Math.max(dCenter + radius, dCenter + sceneBSRadius);
+					sceneBSCenter = newCenter;
+					sceneBSRadius = newRadius;
+			
+				}
+			
+			} );
+			
+			return new THREE.Sphere( sceneBSCenter, sceneBSRadius );
+
+		}
+
 
 		document.addEventListener( 'dragover', e => e.preventDefault() );
 		document.addEventListener( 'dragenter', e => e.preventDefault() );
@@ -107,7 +157,7 @@
 
 			e.preventDefault();
 
-			rotator.children.forEach( c => rotator.remove( c ) );
+			rotator.children.forEach( c => rotator.remove( c ));
 			errorel.innerText = '';
 
 			// Use DataTransfer interface to access the file(s)
@@ -115,22 +165,24 @@
 
 				var file = e.dataTransfer.files[ i ];
 				var ext = file.name.match( /\.([^\.\\\/]+)$/ )[ 1 ];
-				var filereader = new FileReader();
-				filereader.addEventListener( 'loadend', e => {
+				var url = URL.createObjectURL( file );
+				loader.load( url, m => {
 
-					loader.parse( e.srcElement.result, ext, m => {
+					var obj = m.scene ? m.scene : m;
+					var sphere = computeSceneBoundingSphere( obj );
+					var radius = sphere.radius;
+					var s = 1 / radius;
 
-						rotator.add( m.scene ? m.scene : m );
+					obj.position.set( 0, -0.5, 0 );
+					obj.scale.set( s, s, s );
 
-					}, err => {
+					rotator.add( obj );
 
-						errorel.innerText = err.message;
+				}, null, err => {
 
-					} );
+					errorel.innerText = err.message;
 
-				} );
-
-				filereader.readAsText( file );
+				}, ext );
 
 			}
 
