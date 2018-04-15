@@ -21,7 +21,7 @@ loader.getLoader = function( loaderName, manager, loadercb ) {
         // fetch the loader script from the server and run it
         // if it's not already on the page
         fetch(`.../node_modules/three/examples/js/loaders/${ loaderName }.js`)
-            .then(res => res.text)
+            .then(res => res.text())
             .then(tex => {
 
                 eval(text);
