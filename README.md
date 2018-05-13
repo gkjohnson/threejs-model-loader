@@ -2,6 +2,8 @@
 
 THREE.js Model Loader for delegating to the appropriate geometry loader and caches the loaded geometry for fast subsequent loads. Uses the file's extension to determine which THREE geometry loader to use.
 
+[Drag and drop example](https://gkjohnson.github.io/threejs-model-loader/example/index.bundle.html)
+
 ## Use
 
 ```js
