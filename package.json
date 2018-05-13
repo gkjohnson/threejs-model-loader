@@ -5,6 +5,7 @@
   "main": "ModelLoader.js",
   "scripts": {
     "start": "static-server",
+    "build": "cd example && webpack",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -18,7 +19,11 @@
   },
   "homepage": "https://github.com/gkjohnson/threejs-model-loader#readme",
   "devDependencies": {
-    "static-server": "^2.2.1"
+    "script-loader": "^0.7.2",
+    "static-server": "^2.2.1",
+    "three": "^0.92.0",
+    "wc-loader": "^1.1.12",
+    "webpack": "^3.5.3"
   },
   "peerDependencies": {
     "three": "^0.91.0"

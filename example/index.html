@@ -1,10 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title></title>
+	<title>THREEjs Model Loader</title>
 
-	<script src="./node_modules/three/build/three.min.js"></script>
-	<script src="./ModelLoader.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/2.6.1/jszip.min.js"></script>
+	<script src="../node_modules/three/build/three.min.js"></script>
+	<script src="../node_modules/three/examples/js/libs/inflate.min.js"></script>
+	<script src="../node_modules/three/examples/js/loaders/AssimpLoader.js"></script>
+	<script src="../node_modules/three/examples/js/loaders/ColladaLoader.js"></script>
+	<script src="../node_modules/three/examples/js/loaders/FBXLoader.js"></script>
+	<script src="../node_modules/three/examples/js/loaders/GLTFLoader.js"></script>
+	<script src="../node_modules/three/examples/js/loaders/KMZLoader.js"></script>
+	<script src="../node_modules/three/examples/js/loaders/OBJLoader.js"></script>
+	<script src="../node_modules/three/examples/js/loaders/PLYLoader.js"></script>
+	<script src="../node_modules/three/examples/js/loaders/PCDLoader.js"></script>
+	<script src="../node_modules/three/examples/js/loaders/STLLoader.js"></script>
+	<script src="../node_modules/three/examples/js/loaders/VTKLoader.js"></script>
+
+	<script src="../ModelLoader.js"></script>
 
 	<style>
 		* {
@@ -57,7 +70,7 @@
 		var ambientLight = new THREE.AmbientLight( 0xcccccc, 0.4 );
 		scene.add( ambientLight );
 
-		var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.8 );
+		var directionalLight = new THREE.DirectionalLight();
 		directionalLight.position.set( 1, 1, 0 ).normalize();
 		scene.add( directionalLight );
 
@@ -84,7 +97,7 @@
 			function getSource( name ) {
 				
 				var f =
-					fetch( `./node_modules/three/examples/js/loaders/${ name }.js` )
+					fetch( `../node_modules/three/examples/js/loaders/${ name }.js` )
 						.then( res => res.text() )
 				f.then( text => eval( text ) );
 
@@ -98,6 +111,12 @@
 				if ( loaderName === 'OBJLoader2' ) {
 
 					getSource( 'LoaderSupport' )
+						.then(() => getSource( loaderName ))
+						.then(() => loadercb( createLoader() ));
+
+				} else if ( loaderName === 'KMZLoader' ) {
+
+					getSource( 'ColladaLoader' )
 						.then(() => getSource( loaderName ))
 						.then(() => loadercb( createLoader() ));
 
@@ -168,7 +187,8 @@
 				var url = URL.createObjectURL( file );
 				loader.load( url, m => {
 
-					var obj = m.scene ? m.scene : m;
+					var obj = m.scene || m.object || m;
+
 					var sphere = computeSceneBoundingSphere( obj );
 					var radius = sphere.radius;
 					var s = 1 / radius;
