@@ -135,41 +135,6 @@
 
 		};
 		
-		function computeSceneBoundingSphere(root) {
-
-			var sceneBSCenter = new THREE.Vector3(0, 0, 0), sceneBSRadius = 0;
-			THREE.Object3D.prototype.traverse.call( root, function (object) {
-			
-				if (object instanceof THREE.Mesh) {
-			
-					// Object radius
-					object.geometry.computeBoundingSphere();
-					var radius = object.geometry.boundingSphere.radius;
-
-					// Object center in world space
-					var objectCenterLocal = object.position.clone();
-					var objectCenterWorld = object.matrixWorld.multiplyVector3(objectCenterLocal);
-
-					// New center in world space
-					var newCenter = new THREE.Vector3();
-					newCenter.add(sceneBSCenter, objectCenterWorld);
-					newCenter.divideScalar(2.0);
-
-					// New radius in world space
-					var dCenter = newCenter.distanceTo(sceneBSCenter);
-					var newRadius = Math.max(dCenter + radius, dCenter + sceneBSRadius);
-					sceneBSCenter = newCenter;
-					sceneBSRadius = newRadius;
-			
-				}
-			
-			} );
-			
-			return new THREE.Sphere( sceneBSCenter, sceneBSRadius );
-
-		}
-
-
 		function createZip(dtitems) {
 
 			return new Promise((resolve, reject) => {
