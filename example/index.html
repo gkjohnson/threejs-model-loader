@@ -56,37 +56,39 @@
 <body>
 	<div id="container">
 		<div id="error"></div>
-		<div>Drag geometry files to load and view them </br>
-		( Files with external dependencies will not load )</div>
+		<div>Drag geometry files and depencies to load and view them </br>
+		( Dragging folders will only work in chrome )</div>
 	</div>
 	
 	<script>
 
-		let errorel = document.getElementById( 'error' );
-		let scene = new THREE.Scene();
-		let camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 2000 );
+		// Renderer and scene setup
+		const scene = new THREE.Scene();
+		const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 2000 );
 		camera.position.set( 4, 5, 4 );
 		camera.lookAt( new THREE.Vector3( 0, 0, 0 ) );
 
-		let ambientLight = new THREE.AmbientLight( 0xcccccc, 0.4 );
+		const ambientLight = new THREE.AmbientLight( 0xcccccc, 0.4 );
 		scene.add( ambientLight );
 
-		let directionalLight = new THREE.DirectionalLight();
+		const directionalLight = new THREE.DirectionalLight();
 		directionalLight.position.set( 1, 1, 0 ).normalize();
 		scene.add( directionalLight );
 
-		let rotator = new THREE.Object3D();
+		const rotator = new THREE.Object3D();
 		scene.add( rotator );
 
-		let renderer = new THREE.WebGLRenderer( { antialias: true } );
+		const renderer = new THREE.WebGLRenderer( { antialias: true } );
 		renderer.setPixelRatio( window.devicePixelRatio );
 		renderer.setSize( window.innerWidth, window.innerHeight );
 		renderer.setClearColor( 0x263238 );
 		document.body.appendChild( renderer.domElement );
 
+
 		// overriding the getLoader function so loaders can be
 		// loaded as-needed
-		let loader = new THREE.ModelLoader();
+		const errorel = document.getElementById( 'error' );
+		const loader = new THREE.ModelLoader();
 		loader.getLoader = function ( loaderName, manager, loadercb ) {
 
 			function createLoader() {
@@ -135,11 +137,18 @@
 
 		};
 		
-		function createZip(dtitems) {
+		// Create a zip file and add it to the zip server so extra
+		// files can be added
+		// Folders can only be added if working in Chrome
+		function createZip( dtitems ) {
 
-			return new Promise((resolve, reject) => {
+			return new Promise( resolve => {
 
+				// keep track of how many async file read operations we
+				// do so we know when they've all finished
 				let ct = 0;
+
+				// iterate down the file tree, firing a callback for every file
 				function recurseDirectory(item, filecb) {
 
 					if (item.isFile) {
@@ -159,11 +168,10 @@
 
 				}
 
-
+				// Traverse down the tree and add the files into the zip
 				if (dtitems && dtitems.length && dtitems[0].webkitGetAsEntry) {
 				
 					let zip = new JSZip();
-
 					for (let i = 0; i < dtitems.length; i ++) {
 						let item = dtitems[i];
 
@@ -174,10 +182,9 @@
 							f.file(res => {
 								let fr = new FileReader();
 								fr.onload = e => {
-									ct --;
 
 									zip.file(f.fullPath, e.target.result);
-
+									ct --;
 									if (ct === 0) resolve(zip.generate({ type:"arraybuffer" }));
 
 								}
@@ -196,15 +203,17 @@
 
 		}
 
+		// Load the model into the scene. Returns a promise that resolves with a file extension
+		// if the file was unable to load. Null otherwise
 		function loadModel(file) {
 
-			return new Promise( (resolve, reject) => {
+			return new Promise( resolve => {
 
 				let extmatches = file.name.match( /\.([^\.\\\/]+)$/ );
 				if (extmatches) {
 				
+					// load the file
 					let ext = extmatches[ 1 ];
-
 					let url = URL.createObjectURL( file );
 					fetch( url )
 						.then(res => res.text())
@@ -212,15 +221,18 @@
 
 							URL.revokeObjectURL( url );
 
+							// parse the file
 							loader.parse( data, ext, m => {
 
+								// disambiguate the file to add between all the
+								// parsers. (TODO: Should this be in the main loader?)
 								let mat = new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: THREE.VertexColors });
 								let obj = m.scene || m.object || m;
 								obj = obj instanceof THREE.BufferGeometry ? new THREE.Mesh(obj, mat) : obj;
 								obj = obj instanceof THREE.Geometry ? new THREE.Mesh(obj, mat) : obj;
 
+								// Get the bounds of the model and scale and set appropriately
 								obj.updateMatrixWorld( true );
-
 								let sphere = new THREE.Box3().expandByObject(obj).getBoundingSphere();
 								let s = 3 / sphere.radius;
 
@@ -233,16 +245,13 @@
 
 								resolve(null);
 							
-							}, err => {
-
-								resolve(ext);
-
-							} );
-
+							}, err => resolve(ext));
 
 						} );	
 				}
+
 			});
+
 		}
  
 
@@ -255,9 +264,11 @@
 
 			e.preventDefault();
 
+			// Clear the scene and error before loading
 			while (rotator.children.length) rotator.remove(rotator.children[0]);
 			errorel.innerText = '';
 
+			// Create the zip
 			let dtfiles = [...e.dataTransfer.files];
 			let zipHandle = null;
 			createZip(e.dataTransfer.items)
@@ -267,6 +278,8 @@
 
 					let promises = dtfiles.map(file => loadModel( file ));
 
+					// Load the model and report an error if nothing could
+					// be displayed
 					Promise
 						.all(promises)
 						.then(res => {
