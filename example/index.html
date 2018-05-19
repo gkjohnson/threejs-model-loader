@@ -3,7 +3,7 @@
 <head>
 	<title>THREEjs Model Loader</title>
 
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/2.6.1/jszip.min.js"></script>
+	<script src="../node_modules/jszip/dist/jszip.min.js"></script>
 	<script src="../node_modules/three/build/three.min.js"></script>
 	<script src="../node_modules/three/examples/js/libs/inflate.min.js"></script>
 	<script src="../node_modules/three/examples/js/loaders/AssimpLoader.js"></script>
@@ -176,7 +176,7 @@
 
 			e.preventDefault();
 
-			rotator.children.forEach( c => rotator.remove( c ));
+			while (rotator.children.length) rotator.remove(rotator.children[0]);
 			errorel.innerText = '';
 
 			// Use DataTransfer interface to access the file(s)
