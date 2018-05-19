@@ -153,88 +153,6 @@
 			}
 
 		};
-		
-		// Create a zip file and add it to the zip server so extra
-		// files can be added
-		// Folders can only be added if working in Chrome
-		// TODO: Move this over to the zip server repo and support it 
-		// through the ZipServer class
-		function createZip( dataTransfer ) {
-
-			return new Promise( resolve => {
-
-				// keep track of how many async file read operations we
-				// do so we know when they've all finished
-				const zip = new JSZip();
-				let ct = 0;
-
-				// iterate down the file tree, firing a callback for every file
-				function recurseDirectory(item, filecb) {
-
-					if (item.isFile) {
-
-						filecb(item);
-
-					} else {
-
-						let reader = item.createReader();
-						reader.readEntries(et => {
-							et.forEach(e => {
-								recurseDirectory(e, filecb);
-							});
-						})
-
-					}
-
-				}
-
-				function loadFile(e, name) {
-
-					zip.file(name, e.target.result);
-					ct --;
-					if (ct === 0) resolve(zip.generate({ type: "arraybuffer" }));
-				
-				}
-
-				// Traverse down the tree and add the files into the zip
-				const dtitems = dataTransfer.items && [...dataTransfer.items];
-				const dtfiles = [...dataTransfer.files];
-				console.log(dtitems, dtfiles)
-				if (dtitems && dtitems.length && dtitems[0].webkitGetAsEntry) {
-				
-					for (let i = 0; i < dtitems.length; i ++) {
-						const item = dtitems[i];
-						const entry = item.webkitGetAsEntry();
-						recurseDirectory(entry, f => {
-
-							ct ++;
-							f.file(res => {
-								const fr = new FileReader();
-								fr.onload = e => loadFile(e, f.fullPath);
-								fr.readAsArrayBuffer(res);
-							});
-
-						});
-
-					}
-				} else {
-
-					dtfiles
-						.filter(file => file.size !== 0)
-						.forEach(file => {
-							ct ++;
-
-							const fr = new FileReader();
-							fr.onload = e => loadFile(e, file.name);
-							fr.readAsArrayBuffer(file);
-
-						});
-					requestAnimationFrame(() => resolve(null));
-
-				}
-			});
-
-		}
 
 		// Load the model into the scene. Returns a promise that resolves with a file extension
 		// if the file was unable to load. Null otherwise
@@ -263,8 +181,11 @@
 					plane.position.y = box.min.y;
 
 					obj.position.set(0, 0, 0);
-					scaleContainer.position.sub(sphere.center);
-					scaleContainer.position.divideScalar(2);
+					scaleContainer
+						.position
+						.copy(sphere.center)
+						.multiplyScalar(-1)
+						.divideScalar(2);
 					scaleContainer.scale.set( s, s, s );
 
 					rotator.add( obj );
@@ -304,11 +225,9 @@
 
 			// Create the zip
 			let dtfiles = [...e.dataTransfer.files];
-			let zipHandle = null;
-			createZip(e.dataTransfer)
-				.then(buff => {
-
-					zipHandle = zipserver.add(buff);
+			zipserver
+				.addDataTransfer(e.dataTransfer)
+				.then(zipHandle => {
 
 					let promises = dtfiles.map(file => loadModel( file ));
 
@@ -334,11 +253,7 @@
 
 							}
 
-							if (zipHandle) {
-
-								setTimeout(() => zipHandle.dispose(), 100);
-
-							}
+							setTimeout(() => zipHandle.dispose(), 100);
 						})
 
 				} );

@@ -11,6 +11,77 @@ class ZipServer {
 
     }
 
+    static _dataTransferToZip(dataTransfer) {
+
+        if (!(dataTransfer instanceof DataTransfer)) {
+
+            throw new Error('Data must be of type "DataTransfer"', dataTransfer);
+
+        }        
+
+        return new Promise(resolve => {
+            // keep track of how many async file read operations we
+            // do so we know when they've all finished
+            const zip = new JSZip();
+            let ct = 0;
+
+            // iterate down the file tree, firing a callback for every file
+            function recurseDirectory(item, filecb) {
+                if (item.isFile) {
+                    filecb(item);
+                } else {
+                    let reader = item.createReader();
+                    reader.readEntries(et => {
+                        et.forEach(e => {
+                            recurseDirectory(e, filecb);
+                        });
+                    })
+                }
+            }
+
+            function loadFile(e, name) {
+                zip.file(name, e.target.result);
+                ct --;
+                if (ct === 0) resolve(zip.generate({ type: "arraybuffer" }));
+            
+            }
+            
+            // Traverse down the tree and add the files into the zip
+            const dtitems = dataTransfer.items && [...dataTransfer.items];
+            const dtfiles = [...dataTransfer.files];
+
+            if (dtitems && dtitems.length && dtitems[0].webkitGetAsEntry) {
+            
+                for (let i = 0; i < dtitems.length; i ++) {
+                    const item = dtitems[i];
+                    const entry = item.webkitGetAsEntry();
+                    recurseDirectory(entry, f => {
+                        ct ++;
+                        f.file(res => {
+                            const fr = new FileReader();
+                            fr.onload = e => loadFile(e, f.fullPath);
+                            fr.readAsArrayBuffer(res);
+                        });
+                    });
+                }
+
+            } else {
+                
+                dtfiles
+                    .filter(file => file.size !== 0)
+                    .forEach(file => {
+                        ct ++;
+                        const fr = new FileReader();
+                        fr.onload = e => loadFile(e, file.name);
+                        fr.readAsArrayBuffer(file);
+                    });
+            
+                requestAnimationFrame(() => resolve(null));
+            
+            }
+        });
+    }
+
     // Returns the URL to load the worker script from
     static get _getWorkerUrl() {
 
@@ -28,6 +99,11 @@ class ZipServer {
     // is ready to handle requests
     get ready() { return !!this._serviceWorker; }
     get serviceWorker() { return this._serviceWorker; }
+    get enabled() { return !this._disabled; }
+    set enabled(enabled) { 
+        this._disabled = !enabled;
+        if (this._serviceWorker) this._serviceWorker.postMessage({ disabled: !enabled });
+    }
 
     constructor() {
 
@@ -50,10 +126,12 @@ class ZipServer {
                     (reg.installing || reg.waiting)
                         .addEventListener('statechange', () => {
                             this._serviceWorker = reg.active;
+                            this.enabled = this.enabled;
                             resolve(reg.active)
                         });
                 } else {
                     this._serviceWorker = reg.active;
+                    this.enabled = this.enabled;
                     requestAnimationFrame(() => resolve(reg.active));
                 }
             });
@@ -81,7 +159,7 @@ class ZipServer {
     // transferred to the worker and will no longer be accessible.
 
     // Returns a handle with an id and dispose function for removing the zip
-    add(buffer, transfer = true) {
+    addZip(buffer, transfer = true) {
 
         if (!this.ready) {
 
@@ -104,6 +182,22 @@ class ZipServer {
             dispose: () => this.remove(id)
         
         }
+
+    }
+
+    // Create a zip based on a dataTransfer object retrieved from an event like
+    // draggin and dropping of files.
+    addDataTransfer(dataTransfer) {
+
+        if (!this.ready) {
+
+            throw new Error('ZipServer service worker not intialized, yet.');
+
+        }
+
+        return ZipServer
+            ._dataTransferToZip(dataTransfer)
+            .then(zip => this.addZip(zip));
 
     }
 

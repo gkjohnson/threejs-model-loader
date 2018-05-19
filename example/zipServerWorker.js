@@ -18,6 +18,9 @@ c=a.heap_max+1;c<V;c++)d=a.heap[c],f=i[2*i[2*d+1]+1]+1,f>o&&(f=o,p++),i[2*d+1]=f
 
 class ZipResolver {
 
+    get count() { return Object.keys(this._map).length; }
+    get empty() { return this.count === 0; }
+
     constructor() {
 
         this._map = {};
@@ -31,9 +34,12 @@ class ZipResolver {
         if (!id) return;
 
         if (!buffer) {
+
             this.remove(id);
+        
         } else {
         
+            this._map[id] = null;
             new JSZip()
                 .loadAsync(buffer)
                 .then(zip => this._map[id] = zip);
@@ -56,7 +62,7 @@ class ZipResolver {
     // is progressively shortened until a file is found. Retursn a promise
     // that resolves with the file data, null if no file is found.
     retrieveFile(path, strict = false) {
-        
+
         if (!path) return null;
 
         // normalize the path
@@ -94,7 +100,8 @@ class ZipResolver {
 
 };
 
-let resolver = new ZipResolver();
+const resolvers = {};
+const disabled = {};
 this.addEventListener('install', e => {
 
     // activate immediately so we can start serving
@@ -113,7 +120,9 @@ this.addEventListener('fetch', e => {
 
     // Check if a file is available in one of the zip
     // files and return that instead
-    const pr = resolver.retrieveFile(e.request.url);
+    const r = resolvers[e.clientId];
+    const pr = r && !disabled[e.clientId] ? r.retrieveFile(e.request.url) : null;
+
     if (pr) {
 
         e.respondWith(
@@ -137,6 +146,16 @@ this.addEventListener('fetch', e => {
 // to remove the zip file
 this.addEventListener('message', e => {
 
-    resolver.add(e.data.id, e.data.buffer);
+    resolvers[e.source.id] = resolvers[e.source.id] || new ZipResolver();
+    
+    const r = resolvers[e.source.id];
+    r.add(e.data.id, e.data.buffer);
+
+    if (r.empty) delete resolvers[e.source.id];
+
+    if ('disabled' in e.data) {
+        if (e.data.disabled) disabled[e.source.id] = true;
+        else delete disabled[e.source.id];
+    }
 
 });
