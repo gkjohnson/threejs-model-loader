@@ -196,6 +196,55 @@
 
 		}
 
+		function loadModel(file) {
+
+			return new Promise( (resolve, reject) => {
+
+				let extmatches = file.name.match( /\.([^\.\\\/]+)$/ );
+				if (extmatches) {
+				
+					let ext = extmatches[ 1 ];
+
+					let url = URL.createObjectURL( file );
+					fetch( url )
+						.then(res => res.text())
+						.then(data => {
+
+							URL.revokeObjectURL( url );
+
+							loader.parse( data, ext, m => {
+
+								let mat = new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: THREE.VertexColors });
+								let obj = m.scene || m.object || m;
+								obj = obj instanceof THREE.BufferGeometry ? new THREE.Mesh(obj, mat) : obj;
+								obj = obj instanceof THREE.Geometry ? new THREE.Mesh(obj, mat) : obj;
+
+								obj.updateMatrixWorld( true );
+
+								let sphere = new THREE.Box3().expandByObject(obj).getBoundingSphere();
+								let s = 3 / sphere.radius;
+
+								obj.position.set(0, 0, 0);
+								obj.position.sub(sphere.center);
+								obj.position.divideScalar(2);
+								obj.scale.set( s, s, s );
+
+								rotator.add( obj );
+
+								resolve(null);
+							
+							}, err => {
+
+								resolve(ext);
+
+							} );
+
+
+						} );	
+				}
+			});
+		}
+ 
 
 		let zipserver = new ZipServer();
 		zipserver.register();
@@ -216,71 +265,22 @@
 
 					if ( buff ) zipHandle = zipserver.add(buff);
 
-					let promises = [];
-					let problemExtensions = {};
-					let success = false;
-
-					// Use DataTransfer interface to access the file(s)
-					for ( let i = 0; i < dtfiles.length; i ++ ) {
-
-						let file = dtfiles[ i ];
-						let extmatches = file.name.match( /\.([^\.\\\/]+)$/ );
-
-						if (extmatches) {
-						
-							let ext = extmatches[ 1 ];
-
-							let url = URL.createObjectURL( file );
-							let resolve;
-							promises.push( new Promise( r => resolve = r ) );
-							fetch( url )
-								.then(res => res.text())
-								.then(data => {
-
-									URL.revokeObjectURL( url );
-
-									loader.parse( data, ext, m => {
-
-										let mat = new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: THREE.VertexColors });
-										let obj = m.scene || m.object || m;
-										obj = obj instanceof THREE.BufferGeometry ? new THREE.Mesh(obj, mat) : obj;
-										obj = obj instanceof THREE.Geometry ? new THREE.Mesh(obj, mat) : obj;
-
-										obj.updateMatrixWorld( true );
-
-										let sphere = new THREE.Box3().expandByObject(obj).getBoundingSphere();
-										let s = 3 / sphere.radius;
-
-										obj.position.set(0, 0, 0);
-										obj.position.sub(sphere.center);
-										obj.position.divideScalar(2);
-										obj.scale.set( s, s, s );
-
-										rotator.add( obj );
-
-										success = true;
-										resolve();
-									
-									}, err => {
-
-										problemExtensions[ext] = true;
-										resolve();
-
-									} );
-
-
-								} );	
-
-						}
-
-					}
+					let promises = dtfiles.map(file => loadModel( file ));
 
 					Promise
 						.all(promises)
-						.then(() => {
+						.then(res => {
+
+							const success = res.indexOf(null) !== -1;
 							if (!success) { 
 
-								const extensions = Object.keys(problemExtensions).map(e => `'${ e }'`).join(',');
+								const extensions = res
+									.reduce((acc, val) => {
+										if ( acc.indexOf(val) === -1 ) acc.push(val);
+										return acc;
+									}, []);
+
+								const str = extensions.map(e => `'${ e }'`).join(',');
 								errorel.innerText = `Model Loader : No loader specified for ${ extensions }`;
 
 							}
