@@ -18,6 +18,7 @@
 	<script src="../node_modules/three/examples/js/loaders/VTKLoader.js"></script>
 
 	<script src="../ModelLoader.js"></script>
+	<script src="./ZipServer.js"></script>
 
 	<style>
 		* {
@@ -134,8 +135,7 @@
 
 		};
 		
-		function computeSceneBoundingSphere(root)
-		{
+		function computeSceneBoundingSphere(root) {
 
 			var sceneBSCenter = new THREE.Vector3(0, 0, 0), sceneBSRadius = 0;
 			THREE.Object3D.prototype.traverse.call( root, function (object) {
@@ -170,6 +170,71 @@
 		}
 
 
+		function createZip(dtitems) {
+
+			return new Promise((resolve, reject) => {
+
+				var ct = 0;
+				function recurseDirectory(item, filecb) {
+
+					if (item.isFile) {
+
+						filecb(item);
+
+					} else {
+
+						var reader = item.createReader();
+						reader.readEntries(et => {	
+							et.forEach(e => {
+								recurseDirectory(e, filecb);
+							});
+						})
+
+					}
+
+				}
+
+
+				if (dtitems && dtitems.length && dtitems[0].webkitGetAsEntry) {
+				
+					var zip = new JSZip();
+
+					for (var i = 0; i < dtitems.length; i ++) {
+						var item = dtitems[0];
+
+						var entry = item.webkitGetAsEntry();
+						recurseDirectory(entry, f => {
+
+							ct ++;
+							f.file(res => {
+								var fr = new FileReader();
+								fr.onload = e => {
+									ct --;
+
+									zip.file(f.fullPath, e.target.result);
+
+									if (ct === 0) resolve(zip.generate({ type:"arraybuffer" }));
+
+								}
+								fr.readAsArrayBuffer(res);
+							});
+
+						});
+
+					}
+				} else {
+
+					requestAnimationFrame(() => resolve(null));
+
+				}
+			});
+
+		}
+
+
+		var zipserver = new ZipServer();
+		zipserver.register();
+
 		document.addEventListener( 'dragover', e => e.preventDefault() );
 		document.addEventListener( 'dragenter', e => e.preventDefault() );
 		document.addEventListener( 'drop', e => {
@@ -179,33 +244,57 @@
 			while (rotator.children.length) rotator.remove(rotator.children[0]);
 			errorel.innerText = '';
 
-			// Use DataTransfer interface to access the file(s)
-			for ( var i = 0; i < e.dataTransfer.files.length; i ++ ) {
+			var dtfiles = [...e.dataTransfer.files];
+			var zipHandle = null;
+			createZip(e.dataTransfer.items)
+				.then(buff => {
+					console.log(buff);
+					zipHandle = zipserver.add(buff);
 
-				var file = e.dataTransfer.files[ i ];
-				var ext = file.name.match( /\.([^\.\\\/]+)$/ )[ 1 ];
-				var url = URL.createObjectURL( file );
-				loader.load( url, m => {
+					// Use DataTransfer interface to access the file(s)
+					for ( var i = 0; i < dtfiles.length; i ++ ) {
 
-					var obj = m.scene || m.object || m;
+						var file = dtfiles[ i ];
+						var extmatches = file.name.match( /\.([^\.\\\/]+)$/ );
 
-					var sphere = computeSceneBoundingSphere( obj );
-					var radius = sphere.radius;
-					var s = 1 / radius;
+						if (extmatches) {
+							var ext = extmatches[ 1 ];
+							var url = URL.createObjectURL( file );
+							fetch( url )
+								.then(res => res.text())
+								.then(data => {
+									loader.parse( data, ext, m => {
 
-					obj.position.set( 0, -0.5, 0 );
-					obj.scale.set( s, s, s );
+										var mat = new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: THREE.VertexColors });
+										var obj = m.scene || m.object || m;
+										obj = obj instanceof THREE.BufferGeometry ? new THREE.Mesh(obj, mat) : obj;
+										obj = obj instanceof THREE.Geometry ? new THREE.Mesh(obj, mat) : obj;
 
-					rotator.add( obj );
+										obj.updateMatrixWorld( true );
 
-				}, null, err => {
+										var sphere = new THREE.Box3().expandByObject(obj).getBoundingSphere();
+										var s = 3 / sphere.radius;
 
-					errorel.innerText = err.message;
+										obj.position.set(0, 0, 0);
+										obj.position.sub(sphere.center);
+										obj.position.divideScalar(2);
+										obj.scale.set( s, s, s );
 
-				}, ext );
+										rotator.add( obj );
 
-			}
+									}, null, err => {
 
+										errorel.innerText = err.message;
+
+									} );
+								} );	
+						}
+
+					}
+
+
+					return null;
+				});
 		} );
 
 		window.addEventListener( 'resize', () => {
