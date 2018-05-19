@@ -141,12 +141,13 @@
 		// Create a zip file and add it to the zip server so extra
 		// files can be added
 		// Folders can only be added if working in Chrome
-		function createZip( dtitems ) {
+		function createZip( dataTransfer ) {
 
 			return new Promise( resolve => {
 
 				// keep track of how many async file read operations we
 				// do so we know when they've all finished
+				const zip = new JSZip();
 				let ct = 0;
 
 				// iterate down the file tree, firing a callback for every file
@@ -169,26 +170,29 @@
 
 				}
 
+				function loadFile(e, name) {
+
+					zip.file(name, e.target.result);
+					ct --;
+					if (ct === 0) resolve(zip.generate({ type: "arraybuffer" }));
+				
+				}
+
 				// Traverse down the tree and add the files into the zip
+				const dtitems = dataTransfer.items && [...dataTransfer.items];
+				const dtfiles = [...dataTransfer.files];
+				console.log(dtitems, dtfiles)
 				if (dtitems && dtitems.length && dtitems[0].webkitGetAsEntry) {
 				
-					let zip = new JSZip();
 					for (let i = 0; i < dtitems.length; i ++) {
-						let item = dtitems[i];
-
-						let entry = item.webkitGetAsEntry();
+						const item = dtitems[i];
+						const entry = item.webkitGetAsEntry();
 						recurseDirectory(entry, f => {
 
 							ct ++;
 							f.file(res => {
-								let fr = new FileReader();
-								fr.onload = e => {
-
-									zip.file(f.fullPath, e.target.result);
-									ct --;
-									if (ct === 0) resolve(zip.generate({ type:"arraybuffer" }));
-
-								}
+								const fr = new FileReader();
+								fr.onload = e => loadFile(e, f.fullPath);
 								fr.readAsArrayBuffer(res);
 							});
 
@@ -197,6 +201,16 @@
 					}
 				} else {
 
+					dtfiles
+						.filter(file => file.size !== 0)
+						.forEach(file => {
+							ct ++;
+
+							const fr = new FileReader();
+							fr.onload = e => loadFile(e, file.name);
+							fr.readAsArrayBuffer(file);
+
+						});
 					requestAnimationFrame(() => resolve(null));
 
 				}
@@ -272,7 +286,7 @@
 			// Create the zip
 			let dtfiles = [...e.dataTransfer.files];
 			let zipHandle = null;
-			createZip(e.dataTransfer.items)
+			createZip(e.dataTransfer)
 				.then(buff => {
 
 					if ( buff ) zipHandle = zipserver.add(buff);
