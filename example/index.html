@@ -66,23 +66,39 @@
 		// Renderer and scene setup
 		const scene = new THREE.Scene();
 		const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 2000 );
-		camera.position.set( 4, 5, 4 );
+		camera.position.set( 0, 5.5, 5.5 );
 		camera.lookAt( new THREE.Vector3( 0, 0, 0 ) );
 
 		const ambientLight = new THREE.AmbientLight( 0xcccccc, 0.4 );
 		scene.add( ambientLight );
 
 		const directionalLight = new THREE.DirectionalLight();
-		directionalLight.position.set( 1, 1, 0 ).normalize();
+		directionalLight.position.set( 10, 10, 0 );
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.castShadow = true;
 		scene.add( directionalLight );
 
+		const scaleContainer = new THREE.Object3D();
+		scene.add(scaleContainer);
+
 		const rotator = new THREE.Object3D();
-		scene.add( rotator );
+		scaleContainer.add( rotator );
+
+		const plane = new THREE.Mesh(
+			new THREE.PlaneGeometry(),
+			new THREE.ShadowMaterial({ side: THREE.DoubleSide, transparent: true, opacity: 0.25 })
+		);
+		plane.rotation.set(-Math.PI / 2, 0, 0);
+		plane.scale.multiplyScalar(20);
+		plane.receiveShadow = true;
+		scaleContainer.add(plane);
 
 		const renderer = new THREE.WebGLRenderer( { antialias: true } );
 		renderer.setPixelRatio( window.devicePixelRatio );
 		renderer.setSize( window.innerWidth, window.innerHeight );
 		renderer.setClearColor( 0x263238 );
+		renderer.shadowMap.enabled = true;
 		document.body.appendChild( renderer.domElement );
 
 
@@ -141,6 +157,8 @@
 		// Create a zip file and add it to the zip server so extra
 		// files can be added
 		// Folders can only be added if working in Chrome
+		// TODO: Move this over to the zip server repo and support it 
+		// through the ZipServer class
 		function createZip( dataTransfer ) {
 
 			return new Promise( resolve => {
@@ -220,50 +238,51 @@
 
 		// Load the model into the scene. Returns a promise that resolves with a file extension
 		// if the file was unable to load. Null otherwise
-		function loadModel(file) {
+		function loadModel( file ) {
 
 			return new Promise( resolve => {
-
-				let extmatches = file.name.match( /\.([^\.\\\/]+)$/ );
-				if (extmatches) {
 				
-					// load the file
-					let ext = extmatches[ 1 ];
-					let url = URL.createObjectURL( file );
-					fetch( url )
-						.then(res => res.text())
-						.then(data => {
+				// The file name will be able to be loaded from the
+				// zip server
+				const name = file.name
+				loader.load( name, m => {
 
-							URL.revokeObjectURL( url );
+					// disambiguate the file to add between all the
+					// parsers. (TODO: Should this be in the main loader?)
+					const mat = new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: THREE.VertexColors });
+					let obj = m.scene || m.object || m;
+					obj = obj instanceof THREE.BufferGeometry ? new THREE.Mesh(obj, mat) : obj;
+					obj = obj instanceof THREE.Geometry ? new THREE.Mesh(obj, mat) : obj;
 
-							// parse the file
-							loader.parse( data, ext, m => {
+					// Get the bounds of the model and scale and set appropriately
+					obj.updateMatrixWorld( true );
+					const box = new THREE.Box3().expandByObject(obj);
+					const sphere = box.getBoundingSphere();
+					const s = 3 / sphere.radius;
 
-								// disambiguate the file to add between all the
-								// parsers. (TODO: Should this be in the main loader?)
-								let mat = new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: THREE.VertexColors });
-								let obj = m.scene || m.object || m;
-								obj = obj instanceof THREE.BufferGeometry ? new THREE.Mesh(obj, mat) : obj;
-								obj = obj instanceof THREE.Geometry ? new THREE.Mesh(obj, mat) : obj;
+					plane.position.y = box.min.y;
 
-								// Get the bounds of the model and scale and set appropriately
-								obj.updateMatrixWorld( true );
-								let sphere = new THREE.Box3().expandByObject(obj).getBoundingSphere();
-								let s = 3 / sphere.radius;
+					obj.position.set(0, 0, 0);
+					scaleContainer.position.sub(sphere.center);
+					scaleContainer.position.divideScalar(2);
+					scaleContainer.scale.set( s, s, s );
 
-								obj.position.set(0, 0, 0);
-								obj.position.sub(sphere.center);
-								obj.position.divideScalar(2);
-								obj.scale.set( s, s, s );
+					rotator.add( obj );
+					obj.traverse(c => {
 
-								rotator.add( obj );
+						if ( 'castShadow' in c ) c.castShadow = true;
 
-								resolve(null);
-							
-							}, err => resolve(ext));
+					});
 
-						} );	
-				}
+					resolve(null);
+				
+				}, null, err => {
+				
+                	const matches = file.name.match( /\.([^\.\\\/]+)$/ );
+                	const ext = matches ? matches[1] : '(none)';
+					resolve(ext)
+				
+				});
 
 			});
 
@@ -289,7 +308,7 @@
 			createZip(e.dataTransfer)
 				.then(buff => {
 
-					if ( buff ) zipHandle = zipserver.add(buff);
+					zipHandle = zipserver.add(buff);
 
 					let promises = dtfiles.map(file => loadModel( file ));
 
@@ -298,6 +317,8 @@
 					Promise
 						.all(promises)
 						.then(res => {
+
+							loader.clearCache();
 
 							const success = res.indexOf(null) !== -1;
 							if (!success) { 
@@ -335,7 +356,7 @@
 
 		( function renderLoop() {
 
-			rotator.rotateY( 0.001 );
+			rotator.rotateY( 0.005 );
 			renderer.render( scene, camera );
 			requestAnimationFrame( renderLoop );
 
