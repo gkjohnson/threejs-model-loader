@@ -167,7 +167,7 @@ THREE.ModelLoader.prototype = {
 	},
 
 	// Clear the model cache
-	clear: function () {
+	clearCache: function () {
 
 		this.modelCache = {};
 
