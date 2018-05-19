@@ -287,13 +287,7 @@
 
 							if (zipHandle) {
 
-								setTimeout(() => {
-									console.log('DISPOSING')
-									zipHandle.dispose()
-
-									console.log(zipserver._ids)
-
-								}, 100);
+								setTimeout(() => zipHandle.dispose(), 100);
 
 							}
 						})
