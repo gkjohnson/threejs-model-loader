@@ -149,7 +149,7 @@
 					} else {
 
 						var reader = item.createReader();
-						reader.readEntries(et => {	
+						reader.readEntries(et => {
 							et.forEach(e => {
 								recurseDirectory(e, filecb);
 							});
@@ -165,7 +165,7 @@
 					var zip = new JSZip();
 
 					for (var i = 0; i < dtitems.length; i ++) {
-						var item = dtitems[0];
+						var item = dtitems[i];
 
 						var entry = item.webkitGetAsEntry();
 						recurseDirectory(entry, f => {
