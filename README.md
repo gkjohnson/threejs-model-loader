@@ -58,7 +58,7 @@ The model is returned asynchronously in `onLoad` to support async fetching of th
 
 Clears the cached models.
 
-### Virtual Methods
+### Override-able Methods
 ##### ModelLoader.getLoader(loaderName, manager, loadercb)
 
 Function used to return an instance of a particular loader. Once the loader has been created, pass it into `loadercb`. See above code snippet for an example.
