@@ -62,23 +62,23 @@
 	
 	<script>
 
-		var errorel = document.getElementById( 'error' );
-		var scene = new THREE.Scene();
-		var camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 2000 );
+		let errorel = document.getElementById( 'error' );
+		let scene = new THREE.Scene();
+		let camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 2000 );
 		camera.position.set( 4, 5, 4 );
 		camera.lookAt( new THREE.Vector3( 0, 0, 0 ) );
 
-		var ambientLight = new THREE.AmbientLight( 0xcccccc, 0.4 );
+		let ambientLight = new THREE.AmbientLight( 0xcccccc, 0.4 );
 		scene.add( ambientLight );
 
-		var directionalLight = new THREE.DirectionalLight();
+		let directionalLight = new THREE.DirectionalLight();
 		directionalLight.position.set( 1, 1, 0 ).normalize();
 		scene.add( directionalLight );
 
-		var rotator = new THREE.Object3D();
+		let rotator = new THREE.Object3D();
 		scene.add( rotator );
 
-		var renderer = new THREE.WebGLRenderer( { antialiasing: true } );
+		let renderer = new THREE.WebGLRenderer( { antialiasing: true } );
 		renderer.setPixelRatio( window.devicePixelRatio );
 		renderer.setSize( window.innerWidth, window.innerHeight );
 		renderer.setClearColor( 0x263238 );
@@ -86,7 +86,7 @@
 
 		// overriding the getLoader function so loaders can be
 		// loaded as-needed
-		var loader = new THREE.ModelLoader();
+		let loader = new THREE.ModelLoader();
 		loader.getLoader = function ( loaderName, manager, loadercb ) {
 
 			function createLoader() {
@@ -97,7 +97,7 @@
 
 			function getSource( name ) {
 				
-				var f =
+				let f =
 					fetch( `../node_modules/three/examples/js/loaders/${ name }.js` )
 						.then( res => res.text() )
 				f.then( text => eval( text ) );
@@ -139,7 +139,7 @@
 
 			return new Promise((resolve, reject) => {
 
-				var ct = 0;
+				let ct = 0;
 				function recurseDirectory(item, filecb) {
 
 					if (item.isFile) {
@@ -148,7 +148,7 @@
 
 					} else {
 
-						var reader = item.createReader();
+						let reader = item.createReader();
 						reader.readEntries(et => {
 							et.forEach(e => {
 								recurseDirectory(e, filecb);
@@ -162,17 +162,17 @@
 
 				if (dtitems && dtitems.length && dtitems[0].webkitGetAsEntry) {
 				
-					var zip = new JSZip();
+					let zip = new JSZip();
 
-					for (var i = 0; i < dtitems.length; i ++) {
-						var item = dtitems[i];
+					for (let i = 0; i < dtitems.length; i ++) {
+						let item = dtitems[i];
 
-						var entry = item.webkitGetAsEntry();
+						let entry = item.webkitGetAsEntry();
 						recurseDirectory(entry, f => {
 
 							ct ++;
 							f.file(res => {
-								var fr = new FileReader();
+								let fr = new FileReader();
 								fr.onload = e => {
 									ct --;
 
@@ -197,7 +197,7 @@
 		}
 
 
-		var zipserver = new ZipServer();
+		let zipserver = new ZipServer();
 		zipserver.register();
 
 		document.addEventListener( 'dragover', e => e.preventDefault() );
@@ -209,36 +209,47 @@
 			while (rotator.children.length) rotator.remove(rotator.children[0]);
 			errorel.innerText = '';
 
-			var dtfiles = [...e.dataTransfer.files];
-			var zipHandle = null;
+			let dtfiles = [...e.dataTransfer.files];
+			let zipHandle = null;
 			createZip(e.dataTransfer.items)
 				.then(buff => {
-					console.log(buff);
-					zipHandle = zipserver.add(buff);
+
+					if ( buff ) zipHandle = zipserver.add(buff);
+
+					let promises = [];
+					let problemExtensions = {};
+					let success = false;
 
 					// Use DataTransfer interface to access the file(s)
-					for ( var i = 0; i < dtfiles.length; i ++ ) {
+					for ( let i = 0; i < dtfiles.length; i ++ ) {
 
-						var file = dtfiles[ i ];
-						var extmatches = file.name.match( /\.([^\.\\\/]+)$/ );
+						let file = dtfiles[ i ];
+						let extmatches = file.name.match( /\.([^\.\\\/]+)$/ );
 
 						if (extmatches) {
-							var ext = extmatches[ 1 ];
-							var url = URL.createObjectURL( file );
+						
+							let ext = extmatches[ 1 ];
+
+							let url = URL.createObjectURL( file );
+							let resolve;
+							promises.push( new Promise( r => resolve = r ) );
 							fetch( url )
 								.then(res => res.text())
 								.then(data => {
+
+									URL.revokeObjectURL( url );
+
 									loader.parse( data, ext, m => {
 
-										var mat = new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: THREE.VertexColors });
-										var obj = m.scene || m.object || m;
+										let mat = new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: THREE.VertexColors });
+										let obj = m.scene || m.object || m;
 										obj = obj instanceof THREE.BufferGeometry ? new THREE.Mesh(obj, mat) : obj;
 										obj = obj instanceof THREE.Geometry ? new THREE.Mesh(obj, mat) : obj;
 
 										obj.updateMatrixWorld( true );
 
-										var sphere = new THREE.Box3().expandByObject(obj).getBoundingSphere();
-										var s = 3 / sphere.radius;
+										let sphere = new THREE.Box3().expandByObject(obj).getBoundingSphere();
+										let s = 3 / sphere.radius;
 
 										obj.position.set(0, 0, 0);
 										obj.position.sub(sphere.center);
@@ -247,19 +258,48 @@
 
 										rotator.add( obj );
 
-									}, null, err => {
+										success = true;
+										resolve();
+									
+									}, err => {
 
-										errorel.innerText = err.message;
+										problemExtensions[ext] = true;
+										resolve();
 
 									} );
+
+
 								} );	
+
 						}
 
 					}
 
+					Promise
+						.all(promises)
+						.then(() => {
+							if (!success) { 
 
-					return null;
-				});
+								const extensions = Object.keys(problemExtensions).map(e => `'${ e }'`).join(',');
+								errorel.innerText = `Model Loader : No loader specified for ${ extensions }`;
+
+							}
+
+							if (zipHandle) {
+
+								setTimeout(() => {
+									console.log('DISPOSING')
+									zipHandle.dispose()
+
+									console.log(zipserver._ids)
+
+								}, 100);
+
+							}
+						})
+
+				} );
+
 		} );
 
 		window.addEventListener( 'resize', () => {
