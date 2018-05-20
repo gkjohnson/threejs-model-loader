@@ -63,6 +63,14 @@
 	
 	<script>
 
+		const bgColors = [
+			0xFFC107,
+			0xF06292,
+			0x009688,
+			0x3F51B5,
+			0xCDDC39
+		]
+
 		// Renderer and scene setup
 		const scene = new THREE.Scene();
 		const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 2000 );
@@ -97,7 +105,7 @@
 		const renderer = new THREE.WebGLRenderer( { antialias: true } );
 		renderer.setPixelRatio( window.devicePixelRatio );
 		renderer.setSize( window.innerWidth, window.innerHeight );
-		renderer.setClearColor( 0x263238 );
+		renderer.setClearColor( bgColors[0] );
 		renderer.shadowMap.enabled = true;
 		document.body.appendChild( renderer.domElement );
 
@@ -187,6 +195,10 @@
 						.multiplyScalar(-1)
 						.divideScalar(2);
 					scaleContainer.scale.set( s, s, s );
+					plane
+						.scale
+						.set(1,1,1)
+						.multiplyScalar(100 / s);
 
 					rotator.add( obj );
 					obj.traverse(c => {
@@ -222,6 +234,11 @@
 			// Clear the scene and error before loading
 			while (rotator.children.length) rotator.remove(rotator.children[0]);
 			errorel.innerText = '';
+
+			const newcol = bgColors.shift();
+			bgColors.push(newcol);
+			ambientLight.color.set(newcol).lerp(new THREE.Color(0xffffff), 0.7);
+			renderer.setClearColor(newcol);
 
 			// Create the zip
 			let dtfiles = [...e.dataTransfer.files];
