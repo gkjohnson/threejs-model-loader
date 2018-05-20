@@ -3,9 +3,11 @@
 <head>
 	<title>THREEjs Model Loader</title>
 
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/2.6.1/jszip.min.js"></script>
+	<script src="../node_modules/jszip/dist/jszip.min.js"></script>
 	<script src="../node_modules/three/build/three.min.js"></script>
 	<script src="../node_modules/three/examples/js/libs/inflate.min.js"></script>
+	<script src="../node_modules/three/examples/js/loaders/3MFLoader.js"></script>
+	<script src="../node_modules/three/examples/js/loaders/AMFLoader.js"></script>
 	<script src="../node_modules/three/examples/js/loaders/AssimpLoader.js"></script>
 	<script src="../node_modules/three/examples/js/loaders/ColladaLoader.js"></script>
 	<script src="../node_modules/three/examples/js/loaders/FBXLoader.js"></script>
@@ -16,8 +18,10 @@
 	<script src="../node_modules/three/examples/js/loaders/PCDLoader.js"></script>
 	<script src="../node_modules/three/examples/js/loaders/STLLoader.js"></script>
 	<script src="../node_modules/three/examples/js/loaders/VTKLoader.js"></script>
+	<script src="../node_modules/collada-archive-loader/ColladaArchiveLoader.js"></script>
 
 	<script src="../ModelLoader.js"></script>
+	<script src="./ZipServer.js"></script>
 
 	<style>
 		* {
@@ -55,48 +59,76 @@
 <body>
 	<div id="container">
 		<div id="error"></div>
-		<div>Drag geometry files to load and view them </br>
-		( Files with external dependencies will not load )</div>
+		<div>Drag geometry files and depencies to load and view them </br>
+		( Dragging folders will only work in chrome )</div>
 	</div>
 	
 	<script>
 
-		var errorel = document.getElementById( 'error' );
-		var scene = new THREE.Scene();
-		var camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 2000 );
-		camera.position.set( 4, 5, 4 );
+		const bgColors = [
+			0xFFC107,
+			0xF06292,
+			0x009688,
+			0x3F51B5,
+			0xCDDC39
+		]
+
+		// Renderer and scene setup
+		const scene = new THREE.Scene();
+		const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 2000 );
+		camera.position.set( 0, 5.5, 5.5 );
 		camera.lookAt( new THREE.Vector3( 0, 0, 0 ) );
 
-		var ambientLight = new THREE.AmbientLight( 0xcccccc, 0.4 );
+		const ambientLight = new THREE.AmbientLight( 0xcccccc, 0.4 );
 		scene.add( ambientLight );
 
-		var directionalLight = new THREE.DirectionalLight();
-		directionalLight.position.set( 1, 1, 0 ).normalize();
+		const directionalLight = new THREE.DirectionalLight();
+		directionalLight.position.set( 10, 10, 0 );
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.castShadow = true;
 		scene.add( directionalLight );
 
-		var rotator = new THREE.Object3D();
-		scene.add( rotator );
+		const scaleContainer = new THREE.Object3D();
+		scene.add(scaleContainer);
 
-		var renderer = new THREE.WebGLRenderer( { antialiasing: true } );
+		const rotator = new THREE.Object3D();
+		scaleContainer.add( rotator );
+
+		const plane = new THREE.Mesh(
+			new THREE.PlaneGeometry(),
+			new THREE.ShadowMaterial({ side: THREE.DoubleSide, transparent: true, opacity: 0.25 })
+		);
+		plane.rotation.set(-Math.PI / 2, 0, 0);
+		plane.scale.multiplyScalar(20);
+		plane.receiveShadow = true;
+		scaleContainer.add(plane);
+
+		const renderer = new THREE.WebGLRenderer( { antialias: true } );
 		renderer.setPixelRatio( window.devicePixelRatio );
 		renderer.setSize( window.innerWidth, window.innerHeight );
-		renderer.setClearColor( 0x263238 );
+		renderer.setClearColor( bgColors[0] );
+		renderer.shadowMap.enabled = true;
 		document.body.appendChild( renderer.domElement );
+
 
 		// overriding the getLoader function so loaders can be
 		// loaded as-needed
-		var loader = new THREE.ModelLoader();
+		const errorel = document.getElementById( 'error' );
+		const loader = new THREE.ModelLoader();
 		loader.getLoader = function ( loaderName, manager, loadercb ) {
 
-			function createLoader() {
+			function createLoader( ln ) {
 
-				return new THREE[ loaderName ]( manager );
+				ln = ln || loaderName;
+
+				return new THREE[ ln ]( manager );
 
 			}
 
 			function getSource( name ) {
 				
-				var f =
+				let f =
 					fetch( `../node_modules/three/examples/js/loaders/${ name }.js` )
 						.then( res => res.text() )
 				f.then( text => eval( text ) );
@@ -104,6 +136,8 @@
 				return f;
 
 			}
+
+			console.log('3MFLoader')
 
 			if ( THREE[ loaderName ] == null ) {
 
@@ -120,6 +154,11 @@
 						.then(() => getSource( loaderName ))
 						.then(() => loadercb( createLoader() ));
 
+				} else if ( loaderName === '3MFLoader') {
+
+					getSource( loaderName )
+						.then(() => loadercb( createLoader( 'ThreeMFLoader' ) ));
+
 				} else {
 
 					getSource( loaderName )
@@ -133,42 +172,67 @@
 			}
 
 		};
-		
-		function computeSceneBoundingSphere(root)
-		{
 
-			var sceneBSCenter = new THREE.Vector3(0, 0, 0), sceneBSRadius = 0;
-			THREE.Object3D.prototype.traverse.call( root, function (object) {
-			
-				if (object instanceof THREE.Mesh) {
-			
-					// Object radius
-					object.geometry.computeBoundingSphere();
-					var radius = object.geometry.boundingSphere.radius;
+		// Load the model into the scene. Returns a promise that resolves with a file extension
+		// if the file was unable to load. Null otherwise
+		function loadModel( file ) {
 
-					// Object center in world space
-					var objectCenterLocal = object.position.clone();
-					var objectCenterWorld = object.matrixWorld.multiplyVector3(objectCenterLocal);
+			return new Promise( resolve => {
+				
+				// The file name will be able to be loaded from the
+				// zip server
+				const name = file.name
+				loader.load( name, m => {
 
-					// New center in world space
-					var newCenter = new THREE.Vector3();
-					newCenter.add(sceneBSCenter, objectCenterWorld);
-					newCenter.divideScalar(2.0);
+					// disambiguate the file to add between all the parsers.
+					const mat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+					let obj = m.scene || m.object || m;
+					obj = obj instanceof THREE.BufferGeometry ? new THREE.Mesh(obj, mat) : obj;
+					obj = obj instanceof THREE.Geometry ? new THREE.Mesh(obj, mat) : obj;
+					mat.vertexColors = 'color' in obj.geometry.attributes ? THREE.VertexColors : mat.vertexColors;
 
-					// New radius in world space
-					var dCenter = newCenter.distanceTo(sceneBSCenter);
-					var newRadius = Math.max(dCenter + radius, dCenter + sceneBSRadius);
-					sceneBSCenter = newCenter;
-					sceneBSRadius = newRadius;
-			
-				}
-			
-			} );
-			
-			return new THREE.Sphere( sceneBSCenter, sceneBSRadius );
+					// Get the bounds of the model and scale and set appropriately
+					obj.updateMatrixWorld( true );
+					const box = new THREE.Box3().expandByObject(obj);
+					const sphere = box.getBoundingSphere();
+					const s = 3 / sphere.radius;
+
+					plane.position.y = box.min.y;
+
+					obj.position.set(0, 0, 0);
+					scaleContainer
+						.position
+						.copy(sphere.center)
+						.multiplyScalar(-1)
+						.divideScalar(2);
+					scaleContainer.scale.set( s, s, s );
+					plane
+						.scale
+						.set(1,1,1)
+						.multiplyScalar(100 / s);
+
+					rotator.add( obj );
+					obj.traverse(c => {
+
+						if ( 'castShadow' in c ) c.castShadow = true;
+
+					});
+
+					resolve(null);
+				
+				}, null, err => {
+				
+					resolve(err);
+				
+				});
+
+			});
 
 		}
+ 
 
+		let zipserver = new ZipServer();
+		zipserver.register();
 
 		document.addEventListener( 'dragover', e => e.preventDefault() );
 		document.addEventListener( 'dragenter', e => e.preventDefault() );
@@ -176,35 +240,42 @@
 
 			e.preventDefault();
 
-			rotator.children.forEach( c => rotator.remove( c ));
+			// Clear the scene and error before loading
+			while (rotator.children.length) rotator.remove(rotator.children[0]);
 			errorel.innerText = '';
 
-			// Use DataTransfer interface to access the file(s)
-			for ( var i = 0; i < e.dataTransfer.files.length; i ++ ) {
+			const newcol = bgColors.shift();
+			bgColors.push(newcol);
+			ambientLight.color.set(newcol).lerp(new THREE.Color(0xffffff), 0.7);
+			renderer.setClearColor(newcol);
 
-				var file = e.dataTransfer.files[ i ];
-				var ext = file.name.match( /\.([^\.\\\/]+)$/ )[ 1 ];
-				var url = URL.createObjectURL( file );
-				loader.load( url, m => {
+			// Create the zip
+			let dtfiles = [...e.dataTransfer.files];
+			zipserver
+				.addDataTransfer(e.dataTransfer)
+				.then(zipHandle => {
 
-					var obj = m.scene || m.object || m;
+					let promises = dtfiles.map(file => loadModel( file ));
 
-					var sphere = computeSceneBoundingSphere( obj );
-					var radius = sphere.radius;
-					var s = 1 / radius;
+					// Load the model and report an error if nothing could
+					// be displayed
+					Promise
+						.all(promises)
+						.then(res => {
 
-					obj.position.set( 0, -0.5, 0 );
-					obj.scale.set( s, s, s );
+							loader.clearCache();
 
-					rotator.add( obj );
+							const success = res.indexOf(null) !== -1;
+							if (!success) { 
 
-				}, null, err => {
+								errorel.innerText = res.join('\n');
 
-					errorel.innerText = err.message;
+							}
 
-				}, ext );
+							setTimeout(() => zipHandle.dispose(), 100);
+						})
 
-			}
+				} );
 
 		} );
 
@@ -219,7 +290,7 @@
 
 		( function renderLoop() {
 
-			rotator.rotateY( 0.001 );
+			rotator.rotateY( 0.005 );
 			renderer.render( scene, camera );
 			requestAnimationFrame( renderLoop );
 
