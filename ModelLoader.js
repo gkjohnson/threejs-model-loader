@@ -12,23 +12,28 @@ THREE.ModelLoader = function ( manager ) {
 	this.cachedLoaders = {};
 	this.loaderMap = {
 
+		'3mf': '3MFLoader',
+		'amf': 'AMFLoader',
+		'bvh': 'BVHLoader',
 		'assimp': 'AssimpLoader',
 		'babylon': 'BabylonLoader',
 		'dae': 'ColladaLoader',
 		'drc': 'DRACOLoader',
 		'fbx': 'FBXLoader',
+		'gcode': 'GCodeLoader',
 		'gltf': 'GLTFLoader',
+		'glb': 'GLTFLoader',
 		'kmz': 'KMZLoader',
 		'md2': 'MD2Loader',
 		'mmd': 'MMDLoader',
 		'obj': 'OBJLoader',
 		'ply': 'PLYLoader',
 		'pcd': 'PCDLoader',
-		'pdb': 'PDBLoader',
 		'prwm': 'PRWMLoader',
 		'stl': 'STLLoader',
 		'tds': 'TDSLoader',
 		'vtk': 'VTKLoader',
+		'vtp': 'VTKLoader',
 		'x': 'XLoader',
 		'zae': 'ColladaArchiveLoader',
 
@@ -82,6 +87,7 @@ THREE.ModelLoader.prototype = {
 	extToLoader: function ( ext, maanger, loadercb, onError ) {
 
 		// Get the name of the loader we need
+		ext = ext ? ext.toLowerCase() : null;
 		var loaderName = this.loaderMap[ ext ] || null;
 		if ( loaderName == null ) {
 

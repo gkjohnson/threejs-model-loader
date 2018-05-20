@@ -6,6 +6,8 @@
 	<script src="../node_modules/jszip/dist/jszip.min.js"></script>
 	<script src="../node_modules/three/build/three.min.js"></script>
 	<script src="../node_modules/three/examples/js/libs/inflate.min.js"></script>
+	<script src="../node_modules/three/examples/js/loaders/3MFLoader.js"></script>
+	<script src="../node_modules/three/examples/js/loaders/AMFLoader.js"></script>
 	<script src="../node_modules/three/examples/js/loaders/AssimpLoader.js"></script>
 	<script src="../node_modules/three/examples/js/loaders/ColladaLoader.js"></script>
 	<script src="../node_modules/three/examples/js/loaders/FBXLoader.js"></script>
@@ -116,9 +118,11 @@
 		const loader = new THREE.ModelLoader();
 		loader.getLoader = function ( loaderName, manager, loadercb ) {
 
-			function createLoader() {
+			function createLoader( ln ) {
 
-				return new THREE[ loaderName ]( manager );
+				ln = ln || loaderName;
+
+				return new THREE[ ln ]( manager );
 
 			}
 
@@ -132,6 +136,8 @@
 				return f;
 
 			}
+
+			console.log('3MFLoader')
 
 			if ( THREE[ loaderName ] == null ) {
 
@@ -147,6 +153,11 @@
 					getSource( 'ColladaLoader' )
 						.then(() => getSource( loaderName ))
 						.then(() => loadercb( createLoader() ));
+
+				} else if ( loaderName === '3MFLoader') {
+
+					getSource( loaderName )
+						.then(() => loadercb( createLoader( 'ThreeMFLoader' ) ));
 
 				} else {
 
@@ -173,12 +184,12 @@
 				const name = file.name
 				loader.load( name, m => {
 
-					// disambiguate the file to add between all the
-					// parsers. (TODO: Should this be in the main loader?)
-					const mat = new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: THREE.VertexColors });
+					// disambiguate the file to add between all the parsers.
+					const mat = new THREE.MeshLambertMaterial({ color: 0xffffff });
 					let obj = m.scene || m.object || m;
 					obj = obj instanceof THREE.BufferGeometry ? new THREE.Mesh(obj, mat) : obj;
 					obj = obj instanceof THREE.Geometry ? new THREE.Mesh(obj, mat) : obj;
+					mat.vertexColors = 'color' in obj.geometry.attributes ? THREE.VertexColors : mat.vertexColors;
 
 					// Get the bounds of the model and scale and set appropriately
 					obj.updateMatrixWorld( true );
@@ -211,9 +222,7 @@
 				
 				}, null, err => {
 				
-                	const matches = file.name.match( /\.([^\.\\\/]+)$/ );
-                	const ext = matches ? matches[1] : '(none)';
-					resolve(ext)
+					resolve(err);
 				
 				});
 
@@ -259,14 +268,7 @@
 							const success = res.indexOf(null) !== -1;
 							if (!success) { 
 
-								const extensions = res
-									.reduce((acc, val) => {
-										if ( acc.indexOf(val) === -1 ) acc.push(val);
-										return acc;
-									}, []);
-
-								const str = extensions.map(e => `'${ e }'`).join(',');
-								errorel.innerText = `Model Loader : No loader specified for ${ extensions }`;
+								errorel.innerText = res.join('\n');
 
 							}
 
