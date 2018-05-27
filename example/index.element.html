@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>THREEjs Model Loader</title>
+
+    <script src="../node_modules/jszip/dist/jszip.min.js"></script>
+    <script src="../node_modules/three/build/three.min.js"></script>
+    <script src="../node_modules/three/examples/js/libs/inflate.min.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/3MFLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/AMFLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/AssimpLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/AssimpJSONLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/ColladaLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/FBXLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/KMZLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/OBJLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/PLYLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/PCDLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/STLLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/VTKLoader.js"></script>
+    <script src="../node_modules/three/examples/js/controls/OrbitControls.js"></script>
+    <script src="../node_modules/collada-archive-loader/ColladaArchiveLoader.js"></script>
+
+    <script src="../model-viewer-element.js"></script>
+    <script src="../ModelLoader.js"></script>
+    <script src="./ZipServer.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        html, body {
+            box-sizing: border-box;
+            width: 100%;
+            height: 100%;
+        }
+
+        #container {
+            position: absolute;
+            width: 100%;
+        }
+
+        #container > * {
+            padding: 5px;
+        }
+
+        #error {
+            background: #E91E63;
+        }
+
+        #error:empty {
+            padding: 0;
+        }
+
+        div {
+            color: white;
+            text-align: center;
+            pointer-events: none;
+            font-family:Monospace;
+            font-size:13px;
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            background: #FFC107;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="error"></div>
+        <div>Drag geometry files and depencies to load and view them </br>
+        ( Dragging folders will only work in chrome )</div>
+    </div>
+
+    <model-viewer src="../dolphins_colored.ply" ambient-color="#FFC107"></model-viewer>
+    
+    <script>
+
+        customElements.define('model-viewer', ModelViewer);
+        const errorel = document.getElementById( 'error' );
+        const mv = document.querySelector('model-viewer');
+
+        mv.addEventListener('error', e => errorel.innerText = e.detail);
+        mv.addEventListener('model-change', e => errorel.innerText = '');
+
+        // overriding the getLoader function so loaders can be
+        // loaded as-needed
+        /*
+        const manager = new THREE.LoadingManager();
+        const loader = new THREE.ModelLoader( manager );
+        loader.getLoader = function ( loaderName, manager, loadercb ) {
+
+            function createLoader( ln ) {
+
+                ln = ln || loaderName;
+
+                return new THREE[ ln ]( manager );
+
+            }
+
+            function getSource( name ) {
+                
+                let f =
+                    fetch( `../node_modules/three/examples/js/loaders/${ name }.js` )
+                        .then( res => res.text() )
+                f.then( text => eval( text ) );
+
+                return f;
+
+            }
+
+            if ( THREE[ loaderName ] == null ) {
+
+                if ( loaderName === 'OBJLoader2' ) {
+
+                    getSource( 'LoaderSupport' )
+                        .then(() => getSource( loaderName ))
+                        .then(() => loadercb( createLoader() ));
+
+                } else if ( loaderName === 'KMZLoader' ) {
+
+                    getSource( 'ColladaLoader' )
+                        .then(() => getSource( loaderName ))
+                        .then(() => loadercb( createLoader() ));
+
+                } else if ( loaderName === '3MFLoader') {
+
+                    getSource( loaderName )
+                        .then(() => loadercb( createLoader( 'ThreeMFLoader' ) ));
+
+                } else {
+
+                    getSource( loaderName )
+                        .then(() => loadercb( createLoader() ));
+                }
+
+            } else {
+
+                loadercb( createLoader() );
+
+            }
+
+        };
+        */
+ 
+        document.addEventListener( 'dragover', e => e.preventDefault() );
+        document.addEventListener( 'dragenter', e => e.preventDefault() );
+        document.addEventListener( 'drop', e => {
+
+            e.preventDefault();
+
+            // Clear the scene and error before loading
+            while (rotator.children.length) rotator.remove(rotator.children[0]);
+            errorel.innerText = '';
+
+            const newcol = bgColors.shift();
+            bgColors.push(newcol);
+            ambientLight.color.set(newcol).lerp(new THREE.Color(0xffffff), 0.7);
+            renderer.setClearColor(newcol);
+
+            // Create the zip
+            // TODO: Packing and then unpacking data to and from a zip that we
+            // already have as a blob is not the most efficient way of loading
+            // these files
+            let dtfiles = [...e.dataTransfer.files];
+            ZipServer
+                ._dataTransferToZip(e.dataTransfer)
+                .then(buffer => new JSZip(buffer))
+                .then(zip => {
+
+                    manager.setURLModifier(url => {
+
+                        url = url.replace(/^[\.\\\/]*/, '');
+
+                        const files = zip.file(new RegExp(url));
+                        if (files.length) {
+
+                            const ab = files.pop().asArrayBuffer();
+                            const newurl = URL.createObjectURL( new Blob( [ab] ) );
+
+                            requestAnimationFrame(() => URL.revokeObjectURL(newurl));
+
+                            return newurl;
+
+                        }
+
+                        return url;
+                    })
+
+                    requestAnimationFrame( () => {
+                        let promises = dtfiles.map(file => loadModel( file ));
+
+                        // Load the model and report an error if nothing could
+                        // be displayed
+                        Promise
+                            .all(promises)
+                            .then( res => {
+
+                                loader.clearCache();
+
+                                const success = res.indexOf(null) !== -1;
+                                if (!success) { 
+
+                                    console.log(res)
+                                    errorel.innerText = res.join('\n');
+
+                                }
+
+                                manager.setURLModifier(null);
+
+                            } );
+                    } );
+
+                } );
+
+        } );
+
+    </script>
+</body>
+</html>

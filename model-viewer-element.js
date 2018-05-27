@@ -10,19 +10,16 @@ class ModelViewer extends HTMLElement {
         return ['src', 'display-shadow', 'ambient-color'];
     }
 
-    static get modelLoader() {
-        // TODO: Add a dynamic import script for the loader types
-        if (!this._modelLoader) {
-
-            this._manager = new THREE.LoadingManager();
-            this._modelLoader = new THREE.ModelLoader(this._manager);
-
-        }
-        return this._manager;
+    get loadingManager() {
+        return this._loadingManager = this._loadingManager || new THREE.LoadingManager();
     }
 
-    get src() { return this.getAttribute('urdf') || ''; }
-    set src(val) { this.setAttribute('urdf', val); }
+    get modelLoader() {
+        return this._modelLoader = this._modelLoader || new THREE.ModelLoader(this.loadingManager);
+    }
+
+    get src() { return this.getAttribute('src') || ''; }
+    set src(val) { this.setAttribute('src', val); }
 
     get displayShadow() { return this.hasAttribute('display-shadow') || false; }
     set displayShadow(val) {
@@ -42,14 +39,14 @@ class ModelViewer extends HTMLElement {
         // Scene setup
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
-        camera.position.z = -10;
+        camera.position.z = 10;
 
         const ambientLight = new THREE.AmbientLight(this.ambientColor);
         scene.add(ambientLight);
 
         // Light setup
         const dirLight = new THREE.DirectionalLight(0xffffff);
-        dirLight.position.set(.4, 1, .1);
+        dirLight.position.set(0, 10, 0);
         dirLight.shadow.mapSize.width = 2048;
         dirLight.shadow.mapSize.height = 2048;
         dirLight.castShadow = true;
@@ -90,7 +87,8 @@ class ModelViewer extends HTMLElement {
         controls.minDistance = 0.25;
         controls.addEventListener('change', () => this._dirty = true);
         
-        this.world = world;
+        this.rotator = rotator;
+        this.scaleContainer = scaleContainer;
         this.renderer = renderer;
         this.camera = camera;
         this.controls = controls;
@@ -101,6 +99,7 @@ class ModelViewer extends HTMLElement {
 
         const _do = () => {
             if(this.parentNode) {
+                this.refresh();
                 this.controls.update();
                 if (this._dirty) {
                     this.renderer.render(scene, camera);
@@ -110,9 +109,6 @@ class ModelViewer extends HTMLElement {
             this._renderLoopId = requestAnimationFrame(_do);
         }
         _do();
-
-        // set up the canvas
-        window.addEventListener('resize', () => this.refresh());
     }
 
     connectedCallback() {
@@ -170,13 +166,13 @@ class ModelViewer extends HTMLElement {
 
         if (currsize.width != w || currsize.height != h) {
             this._dirty = true;
+
+            r.setPixelRatio(window.devicePixelRatio);
+            r.setSize(w, h, false);
+
+            this.camera.aspect = w / h;
+            this.camera.updateProjectionMatrix();
         }
-
-        r.setPixelRatio(window.devicePixelRatio);
-        r.setSize(w, h, false);
-
-        this.camera.aspect = w / h;
-        this.camera.updateProjectionMatrix();
     }
 
     /* Private Functions */ 
@@ -187,6 +183,7 @@ class ModelViewer extends HTMLElement {
         if (this._model) {
             this._model.parent.remove(this._model);
             this._model = null;
+            this._dirty = true;
         }
 
         if (src) {    
@@ -205,12 +202,14 @@ class ModelViewer extends HTMLElement {
                     if (this._requestId !== requestId) return;
 
                     const mat = new THREE.MeshBasicMaterial( { color: 0xffffff } );
-                    let obj = res.scene || res.object || m;
+                    let obj = res.scene || res.object || res;
                     obj = obj.isBufferGeometry || obj.isGeometry ? new THREE.Mesh(obj, mat) : obj;
 
-                    this._setModel(obj);
+                    this._addModel(obj);
 
                     this.dispatchEvent(new CustomEvent('model-loaded', { bubbles: true, cancelable: true, composed: true }));
+                }, null, err => {
+                    this.dispatchEvent(new CustomEvent('error', { bubbles: true, cancelable: true, composed: true, detail: err }));
                 });
 
         }
@@ -273,6 +272,8 @@ class ModelViewer extends HTMLElement {
             }
 
         });
+
+        this._dirty = true;
 
     }
 }
