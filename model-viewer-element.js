@@ -7,7 +7,7 @@
 class ModelViewer extends HTMLElement {
 
     static get observedAttributes() {
-        return ['src', 'display-shadow', 'ambient-color'];
+        return ['src', 'display-shadow', 'ambient-color', 'show-grid'];
     }
 
     get loadingManager() {
@@ -30,6 +30,11 @@ class ModelViewer extends HTMLElement {
     get ambientColor() { return this.getAttribute('ambient-color') || '#455A64'; }
     set ambientColor(val) {
         val ? this.setAttribute('ambient-color', val) : this.removeAttribute('ambient-color');
+    }
+
+    get showGrid() { return this.hasAttribute('show-grid') || false; }
+    set showGrid(val) {
+        val ? this.setAttribute('show-grid', true) : this.removeAttribute('show-grid');
     }
 
     /* Lifecycle Functions */
@@ -69,6 +74,12 @@ class ModelViewer extends HTMLElement {
         plane.receiveShadow = true;
         scaleContainer.add(plane);
 
+        const gridHelper = new THREE.GridHelper(10, 10, 0xffffff, 0xeeeeee);
+        gridHelper.material.transparent = true;
+        gridHelper.material.opacity = 0.6;
+        gridHelper.visible = false;
+        scaleContainer.add(gridHelper);
+
         // Renderer setup
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setClearColor(0xffffff);
@@ -93,6 +104,7 @@ class ModelViewer extends HTMLElement {
         this.camera = camera;
         this.controls = controls;
         this.plane = plane;
+        this.gridHelper = gridHelper;
         this.ambientLight = ambientLight;
         this._model = null;
         this._requestId = 0;
@@ -152,6 +164,11 @@ class ModelViewer extends HTMLElement {
 
             case 'ambient-color': {
                 this.ambientLight.color.set(this.ambientColor);
+                break;
+            }
+
+            case 'show-grid': {
+                this.gridHelper.visible = this.showGrid;
                 break;
             }
         }
@@ -219,6 +236,8 @@ class ModelViewer extends HTMLElement {
         const rotator = this.rotator;
         const scaleContainer = this.scaleContainer;
         const plane = this.plane;
+        const gridHelper = this.gridHelper;
+
         this._model = obj;
 
         // Get the bounds of the model and scale and set appropriately
@@ -242,6 +261,9 @@ class ModelViewer extends HTMLElement {
             .scale
             .set( 1, 1, 1 )
             .multiplyScalar( 100 / s );
+
+        gridHelper.position.copy(plane.position);
+        gridHelper.position.y -= 1e-3;
 
         // make sure the obj will cast shadows
         obj.traverse(c => {
