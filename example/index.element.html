@@ -84,17 +84,14 @@
 
         customElements.define('model-viewer', ModelViewer);
         const errorel = document.getElementById( 'error' );
-        const mv = document.querySelector('model-viewer');
+        const viewer = document.querySelector('model-viewer');
 
-        mv.addEventListener('error', e => errorel.innerText = e.detail);
-        mv.addEventListener('model-change', e => errorel.innerText = '');
+        viewer.addEventListener('error', e => errorel.innerText = e.detail);
+        viewer.addEventListener('model-change', e => errorel.innerText = '');
 
         // overriding the getLoader function so loaders can be
         // loaded as-needed
-        /*
-        const manager = new THREE.LoadingManager();
-        const loader = new THREE.ModelLoader( manager );
-        loader.getLoader = function ( loaderName, manager, loadercb ) {
+        viewer.modelLoader.getLoader = function ( loaderName, manager, loadercb ) {
 
             function createLoader( ln ) {
 
@@ -147,7 +144,6 @@
             }
 
         };
-        */
  
         document.addEventListener( 'dragover', e => e.preventDefault() );
         document.addEventListener( 'dragenter', e => e.preventDefault() );
@@ -155,26 +151,22 @@
 
             e.preventDefault();
 
-            // Clear the scene and error before loading
-            while (rotator.children.length) rotator.remove(rotator.children[0]);
-            errorel.innerText = '';
-
-            const newcol = bgColors.shift();
-            bgColors.push(newcol);
-            ambientLight.color.set(newcol).lerp(new THREE.Color(0xffffff), 0.7);
-            renderer.setClearColor(newcol);
+            // const newcol = bgColors.shift();
+            // bgColors.push(newcol);
+            // ambientLight.color.set(newcol).lerp(new THREE.Color(0xffffff), 0.7);
+            // renderer.setClearColor(newcol);
 
             // Create the zip
             // TODO: Packing and then unpacking data to and from a zip that we
             // already have as a blob is not the most efficient way of loading
             // these files
-            let dtfiles = [...e.dataTransfer.files];
+            let filenames = [...e.dataTransfer.files].map(f => f.name);
             ZipServer
                 ._dataTransferToZip(e.dataTransfer)
                 .then(buffer => new JSZip(buffer))
                 .then(zip => {
 
-                    manager.setURLModifier(url => {
+                    viewer.loadingManager.setURLModifier(url => {
 
                         url = url.replace(/^[\.\\\/]*/, '');
 
@@ -191,33 +183,40 @@
                         }
 
                         return url;
-                    })
+                    });
 
-                    requestAnimationFrame( () => {
-                        let promises = dtfiles.map(file => loadModel( file ));
+                    const extregex = new RegExp(
+                        `(${ Object
+                            .keys(viewer.modelLoader.loaderMap)
+                            .join('|')
+                        })$`);
 
-                        // Load the model and report an error if nothing could
-                        // be displayed
-                        Promise
-                            .all(promises)
-                            .then( res => {
+                    viewer.src = 
+                        filenames
+                            .filter(n => extregex.test(n))
+                            .pop();
 
-                                loader.clearCache();
+                        // // Load the model and report an error if nothing could
+                        // // be displayed
+                        // Promise
+                        //     .all(promises)
+                        //     .then( res => {
 
-                                const success = res.indexOf(null) !== -1;
-                                if (!success) { 
+                        //         loader.clearCache();
 
-                                    console.log(res)
-                                    errorel.innerText = res.join('\n');
+                        //         const success = res.indexOf(null) !== -1;
+                        //         if (!success) { 
 
-                                }
+                        //             console.log(res)
+                        //             errorel.innerText = res.join('\n');
 
-                                manager.setURLModifier(null);
+                        //         }
 
-                            } );
+                        //         viewer.loadingManager.setURLModifier(null);
+
+                        //     } );
                     } );
 
-                } );
 
         } );
 

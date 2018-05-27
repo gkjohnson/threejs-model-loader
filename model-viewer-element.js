@@ -250,7 +250,6 @@ class ModelViewer extends HTMLElement {
 
                 if ( c.material instanceof THREE.MeshBasicMaterial ) {
 
-                    console.log(c);
                     const mat = new THREE.MeshPhongMaterial({ color: 0x888888 });
                     if ( c.geometry instanceof THREE.BufferGeometry && 'color' in c.geometry.attributes
                         || c.geometry instanceof THREE.Geometry ) {
