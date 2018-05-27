@@ -85,6 +85,13 @@
         customElements.define('model-viewer', ModelViewer);
         const errorel = document.getElementById( 'error' );
         const viewer = document.querySelector('model-viewer');
+        const bgColors = [
+                '#FFC107',
+                '#F06292',
+                '#009688',
+                '#3F51B5',
+                '#CDDC39'
+            ];
 
         viewer.addEventListener('error', e => errorel.innerText = e.detail);
         viewer.addEventListener('model-change', e => errorel.innerText = '');
@@ -151,10 +158,10 @@
 
             e.preventDefault();
 
-            // const newcol = bgColors.shift();
-            // bgColors.push(newcol);
-            // ambientLight.color.set(newcol).lerp(new THREE.Color(0xffffff), 0.7);
-            // renderer.setClearColor(newcol);
+            const newcol = bgColors.shift();
+            bgColors.push(newcol);
+            viewer.ambientColor = newcol;
+            viewer.style.backgroundColor = newcol;
 
             // Create the zip
             // TODO: Packing and then unpacking data to and from a zip that we
@@ -196,27 +203,7 @@
                             .filter(n => extregex.test(n))
                             .pop();
 
-                        // // Load the model and report an error if nothing could
-                        // // be displayed
-                        // Promise
-                        //     .all(promises)
-                        //     .then( res => {
-
-                        //         loader.clearCache();
-
-                        //         const success = res.indexOf(null) !== -1;
-                        //         if (!success) { 
-
-                        //             console.log(res)
-                        //             errorel.innerText = res.join('\n');
-
-                        //         }
-
-                        //         viewer.loadingManager.setURLModifier(null);
-
-                        //     } );
-                    } );
-
+                } );
 
         } );
 
