@@ -100,7 +100,7 @@ module.exports = function(src) {
 /* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/*__wc__loader*/!function(a){var b="\n\t<title>THREEjs Model Loader</title>\n\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\n\t\n\t\n\n\t<style>\t\t*{\t\t\tmargin:0;\t\t\tpadding:0;\t\t\toverflow:hidden;\t\t}\t\t#container{\t\t\tposition:absolute;\t\t\twidth:100%;\t\t}\t\t#container > *{\t\t\tpadding:5px;\t\t}\t\t#error{\t\t\tbackground:#E91E63;\t\t}\t\t#error:empty{\t\t\tpadding:0;\t\t}\t\tdiv{\t\t\tcolor:white;\t\t\ttext-align:center;\t\t\tpointer-events:none;\t\t\tfont-family:Monospace;\t\t\tfont-size:13px;\t\t}\t</style>\n";if(a.head){var c=a.head,d=a.createElement("div");for(d.innerHTML=b;d.children.length>0;)c.appendChild(d.children[0])}else a.write(b)}(document);!function(a){var b="\n\t<div id=\"container\">\n\t\t<div id=\"error\"></div>\n\t\t<div>Drag geometry files and depencies to load and view them <br>\n\t\t( Dragging folders will only work in chrome )</div>\n\t</div>\n\t\n\t\n\n";if(a.body){var c=a.body,d=a.createElement("div");for(d.innerHTML=b;d.children.length>0;)c.appendChild(d.children[0])}else a.write(b)}(document);
+/*__wc__loader*/!function(a){var b="\n    <title>THREEjs Model Loader</title>\n\n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n\n    \n    \n    \n\n    <style>*{margin:0;padding:0;overflow:hidden;}html,body{box-sizing:border-box;width:100%;height:100%;}#container{position:absolute;width:100%;}#container > *{padding:5px;}#error{background:#E91E63;}#error:empty{padding:0;}div{color:white;text-align:center;pointer-events:none;font-family:Monospace;font-size:13px;}model-viewer{width:100%;height:100%;background:#FFC107;}</style>\n";if(a.head){var c=a.head,d=a.createElement("div");for(d.innerHTML=b;d.children.length>0;)c.appendChild(d.children[0])}else a.write(b)}(document);!function(a){var b="\n    <div id=\"container\">\n        <div id=\"error\"></div>\n        <div>Drag geometry files and depencies to load and view them <br>\n        ( Dragging folders will only work in chrome )</div>\n    </div>\n\n    <model-viewer></model-viewer>\n    \n    \n\n";if(a.body){var c=a.body,d=a.createElement("div");for(d.innerHTML=b;d.children.length>0;)c.appendChild(d.children[0])}else a.write(b)}(document);
 __webpack_require__(2);
 
 __webpack_require__(4);
@@ -139,285 +139,138 @@ __webpack_require__(36);
 
 __webpack_require__(38);
 
+__webpack_require__(40);
+
+__webpack_require__(42);
 
 
-		const bgColors = [
-			0xFFC107,
-			0xF06292,
-			0x009688,
-			0x3F51B5,
-			0xCDDC39
-		]
 
-		// Renderer and scene setup
-		const scene = new THREE.Scene();
-		const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 2000 );
-		camera.position.set( 0, 3, 6.5 );
-		camera.lookAt( new THREE.Vector3( 0, 0, 0 ) );
+        customElements.define('model-viewer', ModelViewer);
+        const errorel = document.getElementById( 'error' );
+        const viewer = document.querySelector('model-viewer');
+        const bgColors = [
+                '#FFC107',
+                '#F06292',
+                '#009688',
+                '#3F51B5',
+                '#CDDC39'
+            ];
 
-		const ambientLight = new THREE.AmbientLight( 0xcccccc, 0.4 );
-		scene.add( ambientLight );
+        viewer.addEventListener('error', e => errorel.innerText = e.detail);
+        viewer.addEventListener('model-change', e => errorel.innerText = '');
 
-		const directionalLight = new THREE.DirectionalLight();
-		directionalLight.position.set( 10, 10, 0 );
-        directionalLight.shadow.mapSize.width = 2048;
-        directionalLight.shadow.mapSize.height = 2048;
-        directionalLight.castShadow = true;
-		scene.add( directionalLight );
+        // overriding the getLoader function so loaders can be
+        // loaded as-needed
+        viewer.modelLoader.getLoader = function ( loaderName, manager, loadercb ) {
 
-		const scaleContainer = new THREE.Object3D();
-		scene.add(scaleContainer);
+            function createLoader( ln ) {
 
-		const rotator = new THREE.Object3D();
-		scaleContainer.add( rotator );
+                ln = ln || loaderName;
 
-		const plane = new THREE.Mesh(
-			new THREE.PlaneGeometry(),
-			new THREE.ShadowMaterial({ side: THREE.DoubleSide, transparent: true, opacity: 0.25 })
-		);
-		plane.rotation.set(-Math.PI / 2, 0, 0);
-		plane.scale.multiplyScalar(20);
-		plane.receiveShadow = true;
-		scaleContainer.add(plane);
+                return new THREE[ ln ]( manager );
 
-		const renderer = new THREE.WebGLRenderer( { antialias: true } );
-		renderer.setPixelRatio( window.devicePixelRatio );
-		renderer.setSize( window.innerWidth, window.innerHeight );
-		renderer.setClearColor( bgColors[0] );
-		renderer.shadowMap.enabled = true;
-		document.body.appendChild( renderer.domElement );
+            }
 
+            function getSource( name ) {
+                
+                let f =
+                    fetch( `../node_modules/three/examples/js/loaders/${ name }.js` )
+                        .then( res => res.text() )
+                f.then( text => eval( text ) );
 
-		// overriding the getLoader function so loaders can be
-		// loaded as-needed
-		const errorel = document.getElementById( 'error' );
-		const manager = new THREE.LoadingManager();
-		const loader = new THREE.ModelLoader( manager );
-		loader.getLoader = function ( loaderName, manager, loadercb ) {
+                return f;
 
-			function createLoader( ln ) {
+            }
 
-				ln = ln || loaderName;
+            if ( THREE[ loaderName ] == null ) {
 
-				return new THREE[ ln ]( manager );
+                if ( loaderName === 'OBJLoader2' ) {
 
-			}
+                    getSource( 'LoaderSupport' )
+                        .then(() => getSource( loaderName ))
+                        .then(() => loadercb( createLoader() ));
 
-			function getSource( name ) {
-				
-				let f =
-					fetch( `../node_modules/three/examples/js/loaders/${ name }.js` )
-						.then( res => res.text() )
-				f.then( text => eval( text ) );
+                } else if ( loaderName === 'KMZLoader' ) {
 
-				return f;
+                    getSource( 'ColladaLoader' )
+                        .then(() => getSource( loaderName ))
+                        .then(() => loadercb( createLoader() ));
 
-			}
+                } else if ( loaderName === '3MFLoader') {
 
-			if ( THREE[ loaderName ] == null ) {
+                    getSource( loaderName )
+                        .then(() => loadercb( createLoader( 'ThreeMFLoader' ) ));
 
-				if ( loaderName === 'OBJLoader2' ) {
+                } else {
 
-					getSource( 'LoaderSupport' )
-						.then(() => getSource( loaderName ))
-						.then(() => loadercb( createLoader() ));
+                    getSource( loaderName )
+                        .then(() => loadercb( createLoader() ));
+                }
 
-				} else if ( loaderName === 'KMZLoader' ) {
+            } else {
 
-					getSource( 'ColladaLoader' )
-						.then(() => getSource( loaderName ))
-						.then(() => loadercb( createLoader() ));
+                loadercb( createLoader() );
 
-				} else if ( loaderName === '3MFLoader') {
+            }
 
-					getSource( loaderName )
-						.then(() => loadercb( createLoader( 'ThreeMFLoader' ) ));
-
-				} else {
-
-					getSource( loaderName )
-						.then(() => loadercb( createLoader() ));
-				}
-
-			} else {
-
-				loadercb( createLoader() );
-
-			}
-
-		};
-
-		// Load the model into the scene. Returns a promise that resolves with a file extension
-		// if the file was unable to load. Null otherwise
-		function loadModel( file ) {
-
-			return new Promise( resolve => {
-				
-				// The file name will be able to be loaded from the
-				// zip server
-				const name = file.name
-				loader.load( name, m => {
-
-					// disambiguate the file to add between all the parsers.
-					const mat = new THREE.MeshBasicMaterial( { color: 0xffffff } );
-					let obj = m.scene || m.object || m;
-					obj = obj instanceof THREE.BufferGeometry || obj instanceof THREE.Geometry
-							? new THREE.Mesh( obj, mat ) : obj;
-
-					// Get the bounds of the model and scale and set appropriately
-					obj.updateMatrixWorld( true );
-					const box = new THREE.Box3().expandByObject( obj );
-					const sphere = box.getBoundingSphere( new THREE.Sphere() );
-					const s = 3 / sphere.radius;
-
-					rotator.add( obj );
-					rotator.rotation.set( 0, 0, 0 );
-					obj.position
-						.copy( sphere.center )
-						.negate();
-
-					scaleContainer.scale.set( 1, 1, 1 ).multiplyScalar( s );
-
-					plane.position.y = obj.position.y + box.min.y;
-					plane
-						.scale
-						.set( 1, 1, 1 )
-						.multiplyScalar( 100 / s );
-
-					obj.traverse(c => {
-
-						if ( 'castShadow' in c ) c.castShadow = true;
-
-						if ( c instanceof THREE.Mesh ) {
-
-							if ( c.material instanceof THREE.MeshBasicMaterial ) {
-
-								console.log(c);
-								const mat = new THREE.MeshPhongMaterial({ color: 0x888888 });
-								if ( c.geometry instanceof THREE.BufferGeometry && 'color' in c.geometry.attributes
-									|| c.geometry instanceof THREE.Geometry ) {
-
-									mat.vertexColors = THREE.VertexColors;
-
-								}
-
-								if ( c.geometry instanceof THREE.BufferGeometry && !( 'normal' in c.geometry.attributes )) {
-
-									c.geometry.computeVertexNormals();
-
-								}
-
-								c.material = mat;
-
-							}
-
-						}
-
-					});
-
-					resolve(null);
-				
-				}, null, err => {
-				
-					resolve(err);
-				
-				});
-
-			});
-
-		}
+        };
  
-		document.addEventListener( 'dragover', e => e.preventDefault() );
-		document.addEventListener( 'dragenter', e => e.preventDefault() );
-		document.addEventListener( 'drop', e => {
+        document.addEventListener( 'dragover', e => e.preventDefault() );
+        document.addEventListener( 'dragenter', e => e.preventDefault() );
+        document.addEventListener( 'drop', e => {
 
-			e.preventDefault();
+            e.preventDefault();
 
-			// Clear the scene and error before loading
-			while (rotator.children.length) rotator.remove(rotator.children[0]);
-			errorel.innerText = '';
+            const newcol = bgColors.shift();
+            bgColors.push(newcol);
+            viewer.ambientColor = '#' + new THREE.Color(newcol).lerp(new THREE.Color(0xffffff), 0.7).getHexString();
+            viewer.style.backgroundColor = newcol;
 
-			const newcol = bgColors.shift();
-			bgColors.push(newcol);
-			ambientLight.color.set(newcol).lerp(new THREE.Color(0xffffff), 0.7);
-			renderer.setClearColor(newcol);
+            // Create the zip
+            // TODO: Packing and then unpacking data to and from a zip that we
+            // already have as a blob is not the most efficient way of loading
+            // these files
+            let filenames = [...e.dataTransfer.files].map(f => f.name);
+            ZipServer
+                ._dataTransferToZip(e.dataTransfer)
+                .then(buffer => new JSZip(buffer))
+                .then(zip => {
 
-			// Create the zip
-			// TODO: Packing and then unpacking data to and from a zip that we
-			// already have as a blob is not the most efficient way of loading
-			// these files
-			let dtfiles = [...e.dataTransfer.files];
-			ZipServer
-				._dataTransferToZip(e.dataTransfer)
-				.then(buffer => new JSZip(buffer))
-				.then(zip => {
+                    viewer.loadingManager.setURLModifier(url => {
 
-					manager.setURLModifier(url => {
+                        url = url.replace(/^[\.\\\/]*/, '');
 
-						url = url.replace(/^[\.\\\/]*/, '');
+                        const files = zip.file(new RegExp(url));
+                        if (files.length) {
 
-						const files = zip.file(new RegExp(url));
-						if (files.length) {
+                            const ab = files.pop().asArrayBuffer();
+                            const newurl = URL.createObjectURL( new Blob( [ab] ) );
 
-							const ab = files.pop().asArrayBuffer();
-							const newurl = URL.createObjectURL( new Blob( [ab] ) );
+                            requestAnimationFrame(() => URL.revokeObjectURL(newurl));
 
-							requestAnimationFrame(() => URL.revokeObjectURL(newurl));
+                            return newurl;
 
-							return newurl;
+                        }
 
-						}
+                        return url;
+                    });
 
-						return url;
-					})
+                    const extregex = new RegExp(
+                        `(${ Object
+                            .keys(viewer.modelLoader.loaderMap)
+                            .join('|')
+                        })$`);
 
-					requestAnimationFrame( () => {
-						let promises = dtfiles.map(file => loadModel( file ));
+                    viewer.src = 
+                        filenames
+                            .filter(n => extregex.test(n))
+                            .pop();
 
-						// Load the model and report an error if nothing could
-						// be displayed
-						Promise
-							.all(promises)
-							.then( res => {
+                } );
 
-								loader.clearCache();
+        } );
 
-								const success = res.indexOf(null) !== -1;
-								if (!success) { 
-
-									console.log(res)
-									errorel.innerText = res.join('\n');
-
-								}
-
-								manager.setURLModifier(null);
-
-							} );
-					} );
-
-				} );
-
-		} );
-
-		window.addEventListener( 'resize', () => {
-
-			camera.aspect = window.innerWidth / window.innerHeight;
-			camera.updateProjectionMatrix();
-
-			renderer.setSize( window.innerWidth, window.innerHeight );
-
-		} );
-
-		( function renderLoop() {
-
-			rotator.rotateY( 0.005 );
-			renderer.render( scene, camera );
-			requestAnimationFrame( renderLoop );
-
-		} )();
-
-
-	
+    
 
 
 /***/ }),
@@ -622,7 +475,7 @@ __webpack_require__(0)(__webpack_require__(35))
 /* 35 */
 /***/ (function(module, exports) {
 
-module.exports = "/**\r\n * @author Garrett Johnson / http://gkjohnson.github.io/\r\n * https://github.com/gkjohnson/collada-archive-loader-js\r\n */\r\n\r\nTHREE.ColladaArchiveLoader = function ( manager ) {\r\n\r\n    // TODO: Use this appropriately. It's a little more complicated because\r\n    // the final processing is async due to jszip\r\n    // this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;\r\n    this.manager = THREE.DefaultLoadingManager;\r\n\r\n    this._colladaLoader = new THREE.ColladaLoader();\r\n\r\n}\r\n\r\nTHREE.ColladaArchiveLoader.prototype = {\r\n\r\n    constructor: THREE.ColladaArchiveLoader,\r\n\r\n    load: function ( url, onLoad, onProgress, onError ) {\r\n\r\n        var scope = this;\r\n\r\n        var path = scope.path === undefined ? THREE.LoaderUtils.extractUrlBase( url ) : scope.path;\r\n\r\n        var loader = new THREE.FileLoader( this.manager );\r\n        loader.setResponseType( 'arraybuffer' );\r\n        loader.load( url, function ( data ) {\r\n\r\n            onLoad( scope.parse( data ) );\r\n\r\n        }, onProgress, onError );\r\n\r\n    },\r\n\r\n    parse: function( data ) {\r\n\r\n        function cleanPath( path ) {\r\n\r\n            if ( /^file:/.test( path ) ) {\r\n\r\n                console.warn( 'ColladaArchiveLoader : file:// URI not supported.' );\r\n                return '';\r\n\r\n            }\r\n\r\n            path = path.replace( /\\\\+/g, '/' );\r\n            path = path.replace( /^\\.?\\//, '' );\r\n\r\n            var spl = path.split( '/' );\r\n            var newpath = [];\r\n\r\n            while ( spl.length !== 0 ) {\r\n\r\n                var token = spl.shift();\r\n\r\n                if ( token === '..' ) newpath.pop();\r\n                else newpath.push( token );\r\n\r\n            }\r\n\r\n            return newpath.join( '/' );\r\n        }\r\n\r\n        if ( window.JSZip == null ) {\r\n\r\n            console.error( 'ColladaArchiveLoader : JSZip is required to unpack a Collada archive file.' );\r\n            return null;\r\n\r\n        }\r\n\r\n        try {\r\n\r\n            var zip = new JSZip(data);\r\n\r\n            // Find the entry file\r\n            var manifest = zip.file( 'manifest.xml' ).asText();\r\n            var entryfile;\r\n\r\n            if ( manifest == null ) {\r\n\r\n                var files = zip.file( /\\.dae$/i );\r\n\r\n                if ( files.length === 0 ) {\r\n\r\n                    console.error( 'ColladaArchiveLoader : No manifest found and no Collada file found to load.' );\r\n\r\n                }\r\n\r\n                if ( files.length >= 2 ) {\r\n\r\n                    console.error( 'ColladaArchiveLoader : No manifest found and more than one Collada file found to load.' );\r\n\r\n                }\r\n\r\n                entryfile = files[0].name;\r\n\r\n            } else {\r\n\r\n                var manifestxml = manifest && (new DOMParser()).parseFromString( manifest, 'application/xml' );\r\n                entryfile = [ ...manifestxml.children ]\r\n                    .filter( c => c.tagName === 'dae_root' )[0]\r\n                    .textContent\r\n                    .trim();\r\n\r\n            }\r\n\r\n            entryfile = cleanPath( entryfile );\r\n\r\n            // get the dae file and directory\r\n            var dir = entryfile.replace ( /[^\\/]*$/g, '' );\r\n            var daefile = zip.file( entryfile ).asText();\r\n\r\n            // parse the result\r\n            var result = this._colladaLoader.parse( daefile );\r\n\r\n            for ( var name in result.images ) {\r\n                \r\n                var image = result.images[ name ];\r\n                var path = decodeURI( image.init_from );\r\n                var texpath = cleanPath( `${ dir }/${ cleanPath(image) }` );\r\n                var data = zip.file( texpath ).asArrayBuffer();\r\n                var blob = new Blob( [ data ], 'application/octet-binary' );\r\n                image.build.src = URL.createObjectURL( blob );\r\n\r\n            }\r\n\r\n            // return the data\r\n            return result;\r\n\r\n        } catch ( e ) {\r\n\r\n            console.error( 'ColladaArchiveLoader : The Collada archive file is not valid.' );\r\n            console.error( e );\r\n\r\n            return null;\r\n\r\n        }\r\n\r\n    }\r\n\r\n}"
+module.exports = "/**\n * @author qiao / https://github.com/qiao\n * @author mrdoob / http://mrdoob.com\n * @author alteredq / http://alteredqualia.com/\n * @author WestLangley / http://github.com/WestLangley\n * @author erich666 / http://erichaines.com\n */\n\n// This set of controls performs orbiting, dollying (zooming), and panning.\n// Unlike TrackballControls, it maintains the \"up\" direction object.up (+Y by default).\n//\n//    Orbit - left mouse / touch: one-finger move\n//    Zoom - middle mouse, or mousewheel / touch: two-finger spread or squish\n//    Pan - right mouse, or arrow keys / touch: two-finger move\n\nTHREE.OrbitControls = function ( object, domElement ) {\n\n\tthis.object = object;\n\n\tthis.domElement = ( domElement !== undefined ) ? domElement : document;\n\n\t// Set to false to disable this control\n\tthis.enabled = true;\n\n\t// \"target\" sets the location of focus, where the object orbits around\n\tthis.target = new THREE.Vector3();\n\n\t// How far you can dolly in and out ( PerspectiveCamera only )\n\tthis.minDistance = 0;\n\tthis.maxDistance = Infinity;\n\n\t// How far you can zoom in and out ( OrthographicCamera only )\n\tthis.minZoom = 0;\n\tthis.maxZoom = Infinity;\n\n\t// How far you can orbit vertically, upper and lower limits.\n\t// Range is 0 to Math.PI radians.\n\tthis.minPolarAngle = 0; // radians\n\tthis.maxPolarAngle = Math.PI; // radians\n\n\t// How far you can orbit horizontally, upper and lower limits.\n\t// If set, must be a sub-interval of the interval [ - Math.PI, Math.PI ].\n\tthis.minAzimuthAngle = - Infinity; // radians\n\tthis.maxAzimuthAngle = Infinity; // radians\n\n\t// Set to true to enable damping (inertia)\n\t// If damping is enabled, you must call controls.update() in your animation loop\n\tthis.enableDamping = false;\n\tthis.dampingFactor = 0.25;\n\n\t// This option actually enables dollying in and out; left as \"zoom\" for backwards compatibility.\n\t// Set to false to disable zooming\n\tthis.enableZoom = true;\n\tthis.zoomSpeed = 1.0;\n\n\t// Set to false to disable rotating\n\tthis.enableRotate = true;\n\tthis.rotateSpeed = 1.0;\n\n\t// Set to false to disable panning\n\tthis.enablePan = true;\n\tthis.panSpeed = 1.0;\n\tthis.screenSpacePanning = false; // if true, pan in screen-space\n\tthis.keyPanSpeed = 7.0;\t// pixels moved per arrow key push\n\n\t// Set to true to automatically rotate around the target\n\t// If auto-rotate is enabled, you must call controls.update() in your animation loop\n\tthis.autoRotate = false;\n\tthis.autoRotateSpeed = 2.0; // 30 seconds per round when fps is 60\n\n\t// Set to false to disable use of the keys\n\tthis.enableKeys = true;\n\n\t// The four arrow keys\n\tthis.keys = { LEFT: 37, UP: 38, RIGHT: 39, BOTTOM: 40 };\n\n\t// Mouse buttons\n\tthis.mouseButtons = { ORBIT: THREE.MOUSE.LEFT, ZOOM: THREE.MOUSE.MIDDLE, PAN: THREE.MOUSE.RIGHT };\n\n\t// for reset\n\tthis.target0 = this.target.clone();\n\tthis.position0 = this.object.position.clone();\n\tthis.zoom0 = this.object.zoom;\n\n\t//\n\t// public methods\n\t//\n\n\tthis.getPolarAngle = function () {\n\n\t\treturn spherical.phi;\n\n\t};\n\n\tthis.getAzimuthalAngle = function () {\n\n\t\treturn spherical.theta;\n\n\t};\n\n\tthis.saveState = function () {\n\n\t\tscope.target0.copy( scope.target );\n\t\tscope.position0.copy( scope.object.position );\n\t\tscope.zoom0 = scope.object.zoom;\n\n\t};\n\n\tthis.reset = function () {\n\n\t\tscope.target.copy( scope.target0 );\n\t\tscope.object.position.copy( scope.position0 );\n\t\tscope.object.zoom = scope.zoom0;\n\n\t\tscope.object.updateProjectionMatrix();\n\t\tscope.dispatchEvent( changeEvent );\n\n\t\tscope.update();\n\n\t\tstate = STATE.NONE;\n\n\t};\n\n\t// this method is exposed, but perhaps it would be better if we can make it private...\n\tthis.update = function () {\n\n\t\tvar offset = new THREE.Vector3();\n\n\t\t// so camera.up is the orbit axis\n\t\tvar quat = new THREE.Quaternion().setFromUnitVectors( object.up, new THREE.Vector3( 0, 1, 0 ) );\n\t\tvar quatInverse = quat.clone().inverse();\n\n\t\tvar lastPosition = new THREE.Vector3();\n\t\tvar lastQuaternion = new THREE.Quaternion();\n\n\t\treturn function update() {\n\n\t\t\tvar position = scope.object.position;\n\n\t\t\toffset.copy( position ).sub( scope.target );\n\n\t\t\t// rotate offset to \"y-axis-is-up\" space\n\t\t\toffset.applyQuaternion( quat );\n\n\t\t\t// angle from z-axis around y-axis\n\t\t\tspherical.setFromVector3( offset );\n\n\t\t\tif ( scope.autoRotate && state === STATE.NONE ) {\n\n\t\t\t\trotateLeft( getAutoRotationAngle() );\n\n\t\t\t}\n\n\t\t\tspherical.theta += sphericalDelta.theta;\n\t\t\tspherical.phi += sphericalDelta.phi;\n\n\t\t\t// restrict theta to be between desired limits\n\t\t\tspherical.theta = Math.max( scope.minAzimuthAngle, Math.min( scope.maxAzimuthAngle, spherical.theta ) );\n\n\t\t\t// restrict phi to be between desired limits\n\t\t\tspherical.phi = Math.max( scope.minPolarAngle, Math.min( scope.maxPolarAngle, spherical.phi ) );\n\n\t\t\tspherical.makeSafe();\n\n\n\t\t\tspherical.radius *= scale;\n\n\t\t\t// restrict radius to be between desired limits\n\t\t\tspherical.radius = Math.max( scope.minDistance, Math.min( scope.maxDistance, spherical.radius ) );\n\n\t\t\t// move target to panned location\n\t\t\tscope.target.add( panOffset );\n\n\t\t\toffset.setFromSpherical( spherical );\n\n\t\t\t// rotate offset back to \"camera-up-vector-is-up\" space\n\t\t\toffset.applyQuaternion( quatInverse );\n\n\t\t\tposition.copy( scope.target ).add( offset );\n\n\t\t\tscope.object.lookAt( scope.target );\n\n\t\t\tif ( scope.enableDamping === true ) {\n\n\t\t\t\tsphericalDelta.theta *= ( 1 - scope.dampingFactor );\n\t\t\t\tsphericalDelta.phi *= ( 1 - scope.dampingFactor );\n\n\t\t\t\tpanOffset.multiplyScalar( 1 - scope.dampingFactor );\n\n\t\t\t} else {\n\n\t\t\t\tsphericalDelta.set( 0, 0, 0 );\n\n\t\t\t\tpanOffset.set( 0, 0, 0 );\n\n\t\t\t}\n\n\t\t\tscale = 1;\n\n\t\t\t// update condition is:\n\t\t\t// min(camera displacement, camera rotation in radians)^2 > EPS\n\t\t\t// using small-angle approximation cos(x/2) = 1 - x^2 / 8\n\n\t\t\tif ( zoomChanged ||\n\t\t\t\tlastPosition.distanceToSquared( scope.object.position ) > EPS ||\n\t\t\t\t8 * ( 1 - lastQuaternion.dot( scope.object.quaternion ) ) > EPS ) {\n\n\t\t\t\tscope.dispatchEvent( changeEvent );\n\n\t\t\t\tlastPosition.copy( scope.object.position );\n\t\t\t\tlastQuaternion.copy( scope.object.quaternion );\n\t\t\t\tzoomChanged = false;\n\n\t\t\t\treturn true;\n\n\t\t\t}\n\n\t\t\treturn false;\n\n\t\t};\n\n\t}();\n\n\tthis.dispose = function () {\n\n\t\tscope.domElement.removeEventListener( 'contextmenu', onContextMenu, false );\n\t\tscope.domElement.removeEventListener( 'mousedown', onMouseDown, false );\n\t\tscope.domElement.removeEventListener( 'wheel', onMouseWheel, false );\n\n\t\tscope.domElement.removeEventListener( 'touchstart', onTouchStart, false );\n\t\tscope.domElement.removeEventListener( 'touchend', onTouchEnd, false );\n\t\tscope.domElement.removeEventListener( 'touchmove', onTouchMove, false );\n\n\t\tdocument.removeEventListener( 'mousemove', onMouseMove, false );\n\t\tdocument.removeEventListener( 'mouseup', onMouseUp, false );\n\n\t\twindow.removeEventListener( 'keydown', onKeyDown, false );\n\n\t\t//scope.dispatchEvent( { type: 'dispose' } ); // should this be added here?\n\n\t};\n\n\t//\n\t// internals\n\t//\n\n\tvar scope = this;\n\n\tvar changeEvent = { type: 'change' };\n\tvar startEvent = { type: 'start' };\n\tvar endEvent = { type: 'end' };\n\n\tvar STATE = { NONE: - 1, ROTATE: 0, DOLLY: 1, PAN: 2, TOUCH_ROTATE: 3, TOUCH_DOLLY_PAN: 4 };\n\n\tvar state = STATE.NONE;\n\n\tvar EPS = 0.000001;\n\n\t// current position in spherical coordinates\n\tvar spherical = new THREE.Spherical();\n\tvar sphericalDelta = new THREE.Spherical();\n\n\tvar scale = 1;\n\tvar panOffset = new THREE.Vector3();\n\tvar zoomChanged = false;\n\n\tvar rotateStart = new THREE.Vector2();\n\tvar rotateEnd = new THREE.Vector2();\n\tvar rotateDelta = new THREE.Vector2();\n\n\tvar panStart = new THREE.Vector2();\n\tvar panEnd = new THREE.Vector2();\n\tvar panDelta = new THREE.Vector2();\n\n\tvar dollyStart = new THREE.Vector2();\n\tvar dollyEnd = new THREE.Vector2();\n\tvar dollyDelta = new THREE.Vector2();\n\n\tfunction getAutoRotationAngle() {\n\n\t\treturn 2 * Math.PI / 60 / 60 * scope.autoRotateSpeed;\n\n\t}\n\n\tfunction getZoomScale() {\n\n\t\treturn Math.pow( 0.95, scope.zoomSpeed );\n\n\t}\n\n\tfunction rotateLeft( angle ) {\n\n\t\tsphericalDelta.theta -= angle;\n\n\t}\n\n\tfunction rotateUp( angle ) {\n\n\t\tsphericalDelta.phi -= angle;\n\n\t}\n\n\tvar panLeft = function () {\n\n\t\tvar v = new THREE.Vector3();\n\n\t\treturn function panLeft( distance, objectMatrix ) {\n\n\t\t\tv.setFromMatrixColumn( objectMatrix, 0 ); // get X column of objectMatrix\n\t\t\tv.multiplyScalar( - distance );\n\n\t\t\tpanOffset.add( v );\n\n\t\t};\n\n\t}();\n\n\tvar panUp = function () {\n\n\t\tvar v = new THREE.Vector3();\n\n\t\treturn function panUp( distance, objectMatrix ) {\n\n\t\t\tif ( scope.screenSpacePanning === true ) {\n\n\t\t\t\tv.setFromMatrixColumn( objectMatrix, 1 );\n\n\t\t\t} else {\n\n\t\t\t\tv.setFromMatrixColumn( objectMatrix, 0 );\n\t\t\t\tv.crossVectors( scope.object.up, v );\n\n\t\t\t}\n\n\t\t\tv.multiplyScalar( distance );\n\n\t\t\tpanOffset.add( v );\n\n\t\t};\n\n\t}();\n\n\t// deltaX and deltaY are in pixels; right and down are positive\n\tvar pan = function () {\n\n\t\tvar offset = new THREE.Vector3();\n\n\t\treturn function pan( deltaX, deltaY ) {\n\n\t\t\tvar element = scope.domElement === document ? scope.domElement.body : scope.domElement;\n\n\t\t\tif ( scope.object.isPerspectiveCamera ) {\n\n\t\t\t\t// perspective\n\t\t\t\tvar position = scope.object.position;\n\t\t\t\toffset.copy( position ).sub( scope.target );\n\t\t\t\tvar targetDistance = offset.length();\n\n\t\t\t\t// half of the fov is center to top of screen\n\t\t\t\ttargetDistance *= Math.tan( ( scope.object.fov / 2 ) * Math.PI / 180.0 );\n\n\t\t\t\t// we use only clientHeight here so aspect ratio does not distort speed\n\t\t\t\tpanLeft( 2 * deltaX * targetDistance / element.clientHeight, scope.object.matrix );\n\t\t\t\tpanUp( 2 * deltaY * targetDistance / element.clientHeight, scope.object.matrix );\n\n\t\t\t} else if ( scope.object.isOrthographicCamera ) {\n\n\t\t\t\t// orthographic\n\t\t\t\tpanLeft( deltaX * ( scope.object.right - scope.object.left ) / scope.object.zoom / element.clientWidth, scope.object.matrix );\n\t\t\t\tpanUp( deltaY * ( scope.object.top - scope.object.bottom ) / scope.object.zoom / element.clientHeight, scope.object.matrix );\n\n\t\t\t} else {\n\n\t\t\t\t// camera neither orthographic nor perspective\n\t\t\t\tconsole.warn( 'WARNING: OrbitControls.js encountered an unknown camera type - pan disabled.' );\n\t\t\t\tscope.enablePan = false;\n\n\t\t\t}\n\n\t\t};\n\n\t}();\n\n\tfunction dollyIn( dollyScale ) {\n\n\t\tif ( scope.object.isPerspectiveCamera ) {\n\n\t\t\tscale /= dollyScale;\n\n\t\t} else if ( scope.object.isOrthographicCamera ) {\n\n\t\t\tscope.object.zoom = Math.max( scope.minZoom, Math.min( scope.maxZoom, scope.object.zoom * dollyScale ) );\n\t\t\tscope.object.updateProjectionMatrix();\n\t\t\tzoomChanged = true;\n\n\t\t} else {\n\n\t\t\tconsole.warn( 'WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.' );\n\t\t\tscope.enableZoom = false;\n\n\t\t}\n\n\t}\n\n\tfunction dollyOut( dollyScale ) {\n\n\t\tif ( scope.object.isPerspectiveCamera ) {\n\n\t\t\tscale *= dollyScale;\n\n\t\t} else if ( scope.object.isOrthographicCamera ) {\n\n\t\t\tscope.object.zoom = Math.max( scope.minZoom, Math.min( scope.maxZoom, scope.object.zoom / dollyScale ) );\n\t\t\tscope.object.updateProjectionMatrix();\n\t\t\tzoomChanged = true;\n\n\t\t} else {\n\n\t\t\tconsole.warn( 'WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.' );\n\t\t\tscope.enableZoom = false;\n\n\t\t}\n\n\t}\n\n\t//\n\t// event callbacks - update the object state\n\t//\n\n\tfunction handleMouseDownRotate( event ) {\n\n\t\t//console.log( 'handleMouseDownRotate' );\n\n\t\trotateStart.set( event.clientX, event.clientY );\n\n\t}\n\n\tfunction handleMouseDownDolly( event ) {\n\n\t\t//console.log( 'handleMouseDownDolly' );\n\n\t\tdollyStart.set( event.clientX, event.clientY );\n\n\t}\n\n\tfunction handleMouseDownPan( event ) {\n\n\t\t//console.log( 'handleMouseDownPan' );\n\n\t\tpanStart.set( event.clientX, event.clientY );\n\n\t}\n\n\tfunction handleMouseMoveRotate( event ) {\n\n\t\t//console.log( 'handleMouseMoveRotate' );\n\n\t\trotateEnd.set( event.clientX, event.clientY );\n\n\t\trotateDelta.subVectors( rotateEnd, rotateStart ).multiplyScalar( scope.rotateSpeed );\n\n\t\tvar element = scope.domElement === document ? scope.domElement.body : scope.domElement;\n\n\t\t// rotating across whole screen goes 360 degrees around\n\t\trotateLeft( 2 * Math.PI * rotateDelta.x / element.clientWidth );\n\n\t\t// rotating up and down along whole screen attempts to go 360, but limited to 180\n\t\trotateUp( 2 * Math.PI * rotateDelta.y / element.clientHeight );\n\n\t\trotateStart.copy( rotateEnd );\n\n\t\tscope.update();\n\n\t}\n\n\tfunction handleMouseMoveDolly( event ) {\n\n\t\t//console.log( 'handleMouseMoveDolly' );\n\n\t\tdollyEnd.set( event.clientX, event.clientY );\n\n\t\tdollyDelta.subVectors( dollyEnd, dollyStart );\n\n\t\tif ( dollyDelta.y > 0 ) {\n\n\t\t\tdollyIn( getZoomScale() );\n\n\t\t} else if ( dollyDelta.y < 0 ) {\n\n\t\t\tdollyOut( getZoomScale() );\n\n\t\t}\n\n\t\tdollyStart.copy( dollyEnd );\n\n\t\tscope.update();\n\n\t}\n\n\tfunction handleMouseMovePan( event ) {\n\n\t\t//console.log( 'handleMouseMovePan' );\n\n\t\tpanEnd.set( event.clientX, event.clientY );\n\n\t\tpanDelta.subVectors( panEnd, panStart ).multiplyScalar( scope.panSpeed );\n\n\t\tpan( panDelta.x, panDelta.y );\n\n\t\tpanStart.copy( panEnd );\n\n\t\tscope.update();\n\n\t}\n\n\tfunction handleMouseUp( event ) {\n\n\t\t// console.log( 'handleMouseUp' );\n\n\t}\n\n\tfunction handleMouseWheel( event ) {\n\n\t\t// console.log( 'handleMouseWheel' );\n\n\t\tif ( event.deltaY < 0 ) {\n\n\t\t\tdollyOut( getZoomScale() );\n\n\t\t} else if ( event.deltaY > 0 ) {\n\n\t\t\tdollyIn( getZoomScale() );\n\n\t\t}\n\n\t\tscope.update();\n\n\t}\n\n\tfunction handleKeyDown( event ) {\n\n\t\t//console.log( 'handleKeyDown' );\n\n\t\tswitch ( event.keyCode ) {\n\n\t\t\tcase scope.keys.UP:\n\t\t\t\tpan( 0, scope.keyPanSpeed );\n\t\t\t\tscope.update();\n\t\t\t\tbreak;\n\n\t\t\tcase scope.keys.BOTTOM:\n\t\t\t\tpan( 0, - scope.keyPanSpeed );\n\t\t\t\tscope.update();\n\t\t\t\tbreak;\n\n\t\t\tcase scope.keys.LEFT:\n\t\t\t\tpan( scope.keyPanSpeed, 0 );\n\t\t\t\tscope.update();\n\t\t\t\tbreak;\n\n\t\t\tcase scope.keys.RIGHT:\n\t\t\t\tpan( - scope.keyPanSpeed, 0 );\n\t\t\t\tscope.update();\n\t\t\t\tbreak;\n\n\t\t}\n\n\t}\n\n\tfunction handleTouchStartRotate( event ) {\n\n\t\t//console.log( 'handleTouchStartRotate' );\n\n\t\trotateStart.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );\n\n\t}\n\n\tfunction handleTouchStartDollyPan( event ) {\n\n\t\t//console.log( 'handleTouchStartDollyPan' );\n\n\t\tif ( scope.enableZoom ) {\n\n\t\t\tvar dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;\n\t\t\tvar dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;\n\n\t\t\tvar distance = Math.sqrt( dx * dx + dy * dy );\n\n\t\t\tdollyStart.set( 0, distance );\n\n\t\t}\n\n\t\tif ( scope.enablePan ) {\n\n\t\t\tvar x = 0.5 * ( event.touches[ 0 ].pageX + event.touches[ 1 ].pageX );\n\t\t\tvar y = 0.5 * ( event.touches[ 0 ].pageY + event.touches[ 1 ].pageY );\n\n\t\t\tpanStart.set( x, y );\n\n\t\t}\n\n\t}\n\n\tfunction handleTouchMoveRotate( event ) {\n\n\t\t//console.log( 'handleTouchMoveRotate' );\n\n\t\trotateEnd.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );\n\n\t\trotateDelta.subVectors( rotateEnd, rotateStart ).multiplyScalar( scope.rotateSpeed );\n\n\t\tvar element = scope.domElement === document ? scope.domElement.body : scope.domElement;\n\n\t\t// rotating across whole screen goes 360 degrees around\n\t\trotateLeft( 2 * Math.PI * rotateDelta.x / element.clientWidth );\n\n\t\t// rotating up and down along whole screen attempts to go 360, but limited to 180\n\t\trotateUp( 2 * Math.PI * rotateDelta.y / element.clientHeight );\n\n\t\trotateStart.copy( rotateEnd );\n\n\t\tscope.update();\n\n\t}\n\n\tfunction handleTouchMoveDollyPan( event ) {\n\n\t\t//console.log( 'handleTouchMoveDollyPan' );\n\n\t\tif ( scope.enableZoom ) {\n\n\t\t\tvar dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;\n\t\t\tvar dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;\n\n\t\t\tvar distance = Math.sqrt( dx * dx + dy * dy );\n\n\t\t\tdollyEnd.set( 0, distance );\n\n\t\t\tdollyDelta.set( 0, Math.pow( dollyEnd.y / dollyStart.y, scope.zoomSpeed ) );\n\n\t\t\tdollyIn( dollyDelta.y );\n\n\t\t\tdollyStart.copy( dollyEnd );\n\n\t\t}\n\n\t\tif ( scope.enablePan ) {\n\n\t\t\tvar x = 0.5 * ( event.touches[ 0 ].pageX + event.touches[ 1 ].pageX );\n\t\t\tvar y = 0.5 * ( event.touches[ 0 ].pageY + event.touches[ 1 ].pageY );\n\n\t\t\tpanEnd.set( x, y );\n\n\t\t\tpanDelta.subVectors( panEnd, panStart ).multiplyScalar( scope.panSpeed );\n\n\t\t\tpan( panDelta.x, panDelta.y );\n\n\t\t\tpanStart.copy( panEnd );\n\n\t\t}\n\n\t\tscope.update();\n\n\t}\n\n\tfunction handleTouchEnd( event ) {\n\n\t\t//console.log( 'handleTouchEnd' );\n\n\t}\n\n\t//\n\t// event handlers - FSM: listen for events and reset state\n\t//\n\n\tfunction onMouseDown( event ) {\n\n\t\tif ( scope.enabled === false ) return;\n\n\t\tevent.preventDefault();\n\n\t\tswitch ( event.button ) {\n\n\t\t\tcase scope.mouseButtons.ORBIT:\n\n\t\t\t\tif ( scope.enableRotate === false ) return;\n\n\t\t\t\thandleMouseDownRotate( event );\n\n\t\t\t\tstate = STATE.ROTATE;\n\n\t\t\t\tbreak;\n\n\t\t\tcase scope.mouseButtons.ZOOM:\n\n\t\t\t\tif ( scope.enableZoom === false ) return;\n\n\t\t\t\thandleMouseDownDolly( event );\n\n\t\t\t\tstate = STATE.DOLLY;\n\n\t\t\t\tbreak;\n\n\t\t\tcase scope.mouseButtons.PAN:\n\n\t\t\t\tif ( scope.enablePan === false ) return;\n\n\t\t\t\thandleMouseDownPan( event );\n\n\t\t\t\tstate = STATE.PAN;\n\n\t\t\t\tbreak;\n\n\t\t}\n\n\t\tif ( state !== STATE.NONE ) {\n\n\t\t\tdocument.addEventListener( 'mousemove', onMouseMove, false );\n\t\t\tdocument.addEventListener( 'mouseup', onMouseUp, false );\n\n\t\t\tscope.dispatchEvent( startEvent );\n\n\t\t}\n\n\t}\n\n\tfunction onMouseMove( event ) {\n\n\t\tif ( scope.enabled === false ) return;\n\n\t\tevent.preventDefault();\n\n\t\tswitch ( state ) {\n\n\t\t\tcase STATE.ROTATE:\n\n\t\t\t\tif ( scope.enableRotate === false ) return;\n\n\t\t\t\thandleMouseMoveRotate( event );\n\n\t\t\t\tbreak;\n\n\t\t\tcase STATE.DOLLY:\n\n\t\t\t\tif ( scope.enableZoom === false ) return;\n\n\t\t\t\thandleMouseMoveDolly( event );\n\n\t\t\t\tbreak;\n\n\t\t\tcase STATE.PAN:\n\n\t\t\t\tif ( scope.enablePan === false ) return;\n\n\t\t\t\thandleMouseMovePan( event );\n\n\t\t\t\tbreak;\n\n\t\t}\n\n\t}\n\n\tfunction onMouseUp( event ) {\n\n\t\tif ( scope.enabled === false ) return;\n\n\t\thandleMouseUp( event );\n\n\t\tdocument.removeEventListener( 'mousemove', onMouseMove, false );\n\t\tdocument.removeEventListener( 'mouseup', onMouseUp, false );\n\n\t\tscope.dispatchEvent( endEvent );\n\n\t\tstate = STATE.NONE;\n\n\t}\n\n\tfunction onMouseWheel( event ) {\n\n\t\tif ( scope.enabled === false || scope.enableZoom === false || ( state !== STATE.NONE && state !== STATE.ROTATE ) ) return;\n\n\t\tevent.preventDefault();\n\t\tevent.stopPropagation();\n\n\t\tscope.dispatchEvent( startEvent );\n\n\t\thandleMouseWheel( event );\n\n\t\tscope.dispatchEvent( endEvent );\n\n\t}\n\n\tfunction onKeyDown( event ) {\n\n\t\tif ( scope.enabled === false || scope.enableKeys === false || scope.enablePan === false ) return;\n\n\t\thandleKeyDown( event );\n\n\t}\n\n\tfunction onTouchStart( event ) {\n\n\t\tif ( scope.enabled === false ) return;\n\n\t\tevent.preventDefault();\n\n\t\tswitch ( event.touches.length ) {\n\n\t\t\tcase 1:\t// one-fingered touch: rotate\n\n\t\t\t\tif ( scope.enableRotate === false ) return;\n\n\t\t\t\thandleTouchStartRotate( event );\n\n\t\t\t\tstate = STATE.TOUCH_ROTATE;\n\n\t\t\t\tbreak;\n\n\t\t\tcase 2:\t// two-fingered touch: dolly-pan\n\n\t\t\t\tif ( scope.enableZoom === false && scope.enablePan === false ) return;\n\n\t\t\t\thandleTouchStartDollyPan( event );\n\n\t\t\t\tstate = STATE.TOUCH_DOLLY_PAN;\n\n\t\t\t\tbreak;\n\n\t\t\tdefault:\n\n\t\t\t\tstate = STATE.NONE;\n\n\t\t}\n\n\t\tif ( state !== STATE.NONE ) {\n\n\t\t\tscope.dispatchEvent( startEvent );\n\n\t\t}\n\n\t}\n\n\tfunction onTouchMove( event ) {\n\n\t\tif ( scope.enabled === false ) return;\n\n\t\tevent.preventDefault();\n\t\tevent.stopPropagation();\n\n\t\tswitch ( event.touches.length ) {\n\n\t\t\tcase 1: // one-fingered touch: rotate\n\n\t\t\t\tif ( scope.enableRotate === false ) return;\n\t\t\t\tif ( state !== STATE.TOUCH_ROTATE ) return; // is this needed?\n\n\t\t\t\thandleTouchMoveRotate( event );\n\n\t\t\t\tbreak;\n\n\t\t\tcase 2: // two-fingered touch: dolly-pan\n\n\t\t\t\tif ( scope.enableZoom === false && scope.enablePan === false ) return;\n\t\t\t\tif ( state !== STATE.TOUCH_DOLLY_PAN ) return; // is this needed?\n\n\t\t\t\thandleTouchMoveDollyPan( event );\n\n\t\t\t\tbreak;\n\n\t\t\tdefault:\n\n\t\t\t\tstate = STATE.NONE;\n\n\t\t}\n\n\t}\n\n\tfunction onTouchEnd( event ) {\n\n\t\tif ( scope.enabled === false ) return;\n\n\t\thandleTouchEnd( event );\n\n\t\tscope.dispatchEvent( endEvent );\n\n\t\tstate = STATE.NONE;\n\n\t}\n\n\tfunction onContextMenu( event ) {\n\n\t\tif ( scope.enabled === false ) return;\n\n\t\tevent.preventDefault();\n\n\t}\n\n\t//\n\n\tscope.domElement.addEventListener( 'contextmenu', onContextMenu, false );\n\n\tscope.domElement.addEventListener( 'mousedown', onMouseDown, false );\n\tscope.domElement.addEventListener( 'wheel', onMouseWheel, false );\n\n\tscope.domElement.addEventListener( 'touchstart', onTouchStart, false );\n\tscope.domElement.addEventListener( 'touchend', onTouchEnd, false );\n\tscope.domElement.addEventListener( 'touchmove', onTouchMove, false );\n\n\twindow.addEventListener( 'keydown', onKeyDown, false );\n\n\t// force an update at start\n\n\tthis.update();\n\n};\n\nTHREE.OrbitControls.prototype = Object.create( THREE.EventDispatcher.prototype );\nTHREE.OrbitControls.prototype.constructor = THREE.OrbitControls;\n\nObject.defineProperties( THREE.OrbitControls.prototype, {\n\n\tcenter: {\n\n\t\tget: function () {\n\n\t\t\tconsole.warn( 'THREE.OrbitControls: .center has been renamed to .target' );\n\t\t\treturn this.target;\n\n\t\t}\n\n\t},\n\n\t// backward compatibility\n\n\tnoZoom: {\n\n\t\tget: function () {\n\n\t\t\tconsole.warn( 'THREE.OrbitControls: .noZoom has been deprecated. Use .enableZoom instead.' );\n\t\t\treturn ! this.enableZoom;\n\n\t\t},\n\n\t\tset: function ( value ) {\n\n\t\t\tconsole.warn( 'THREE.OrbitControls: .noZoom has been deprecated. Use .enableZoom instead.' );\n\t\t\tthis.enableZoom = ! value;\n\n\t\t}\n\n\t},\n\n\tnoRotate: {\n\n\t\tget: function () {\n\n\t\t\tconsole.warn( 'THREE.OrbitControls: .noRotate has been deprecated. Use .enableRotate instead.' );\n\t\t\treturn ! this.enableRotate;\n\n\t\t},\n\n\t\tset: function ( value ) {\n\n\t\t\tconsole.warn( 'THREE.OrbitControls: .noRotate has been deprecated. Use .enableRotate instead.' );\n\t\t\tthis.enableRotate = ! value;\n\n\t\t}\n\n\t},\n\n\tnoPan: {\n\n\t\tget: function () {\n\n\t\t\tconsole.warn( 'THREE.OrbitControls: .noPan has been deprecated. Use .enablePan instead.' );\n\t\t\treturn ! this.enablePan;\n\n\t\t},\n\n\t\tset: function ( value ) {\n\n\t\t\tconsole.warn( 'THREE.OrbitControls: .noPan has been deprecated. Use .enablePan instead.' );\n\t\t\tthis.enablePan = ! value;\n\n\t\t}\n\n\t},\n\n\tnoKeys: {\n\n\t\tget: function () {\n\n\t\t\tconsole.warn( 'THREE.OrbitControls: .noKeys has been deprecated. Use .enableKeys instead.' );\n\t\t\treturn ! this.enableKeys;\n\n\t\t},\n\n\t\tset: function ( value ) {\n\n\t\t\tconsole.warn( 'THREE.OrbitControls: .noKeys has been deprecated. Use .enableKeys instead.' );\n\t\t\tthis.enableKeys = ! value;\n\n\t\t}\n\n\t},\n\n\tstaticMoving: {\n\n\t\tget: function () {\n\n\t\t\tconsole.warn( 'THREE.OrbitControls: .staticMoving has been deprecated. Use .enableDamping instead.' );\n\t\t\treturn ! this.enableDamping;\n\n\t\t},\n\n\t\tset: function ( value ) {\n\n\t\t\tconsole.warn( 'THREE.OrbitControls: .staticMoving has been deprecated. Use .enableDamping instead.' );\n\t\t\tthis.enableDamping = ! value;\n\n\t\t}\n\n\t},\n\n\tdynamicDampingFactor: {\n\n\t\tget: function () {\n\n\t\t\tconsole.warn( 'THREE.OrbitControls: .dynamicDampingFactor has been renamed. Use .dampingFactor instead.' );\n\t\t\treturn this.dampingFactor;\n\n\t\t},\n\n\t\tset: function ( value ) {\n\n\t\t\tconsole.warn( 'THREE.OrbitControls: .dynamicDampingFactor has been renamed. Use .dampingFactor instead.' );\n\t\t\tthis.dampingFactor = value;\n\n\t\t}\n\n\t}\n\n} );\n"
 
 /***/ }),
 /* 36 */
@@ -634,7 +487,7 @@ __webpack_require__(0)(__webpack_require__(37))
 /* 37 */
 /***/ (function(module, exports) {
 
-module.exports = "/**\r\n * @author Garrett Johnson / http://gkjohnson.github.io/\r\n * https://github.com/gkjohnson/threejs-model-loader\r\n */\r\n\r\nTHREE.ModelLoader = function ( manager ) {\r\n\r\n\tthis.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;\r\n\r\n\tthis.modelCache = {};\r\n\r\n\tthis.cachedLoaders = {};\r\n\tthis.loaderMap = {\r\n\r\n\t\t'3mf': '3MFLoader',\r\n\t\t'amf': 'AMFLoader',\r\n\t\t'bvh': 'BVHLoader',\r\n\t\t'assimp': 'AssimpLoader',\r\n\t\t'babylon': 'BabylonLoader',\r\n\t\t'dae': 'ColladaLoader',\r\n\t\t'drc': 'DRACOLoader',\r\n\t\t'fbx': 'FBXLoader',\r\n\t\t'gcode': 'GCodeLoader',\r\n\t\t'gltf': 'GLTFLoader',\r\n\t\t'glb': 'GLTFLoader',\r\n\t\t'kmz': 'KMZLoader',\r\n\t\t'md2': 'MD2Loader',\r\n\t\t'mmd': 'MMDLoader',\r\n\t\t'obj': 'OBJLoader',\r\n\t\t'ply': 'PLYLoader',\r\n\t\t'pcd': 'PCDLoader',\r\n\t\t'prwm': 'PRWMLoader',\r\n\t\t'stl': 'STLLoader',\r\n\t\t'tds': 'TDSLoader',\r\n\t\t'vtk': 'VTKLoader',\r\n\t\t'vtp': 'VTKLoader',\r\n\t\t'x': 'XLoader',\r\n\t\t'zae': 'ColladaArchiveLoader',\r\n\r\n\t};\r\n\r\n};\r\n\r\nTHREE.ModelLoader.prototype = {\r\n\r\n\tconstructor: THREE.ColladaLoader,\r\n\r\n\ttoCacheKey: function ( url ) {\r\n\r\n\t\t// https://stackoverflow.com/questions/14780350/convert-relative-path-to-absolute-using-javascript\r\n\t\tthis.linkTag = this.linkTag || document.createElement( 'a' );\r\n\t\tthis.linkTag.href = url;\r\n\t\treturn this.linkTag.href;\r\n\r\n\t},\r\n\r\n\tcloneResult: function ( argsarr ) {\r\n\r\n\t\treturn argsarr.map( r => {\r\n\r\n\t\t\tif ( r.isObject3D ) {\r\n\r\n\t\t\t\treturn r.clone();\r\n\t\t\t\r\n\t\t\t} else if ( 'scene' in r ) {\r\n\r\n\t\t\t\t// Handle the 'ColladaLoader' case where more than\r\n\t\t\t\t// just the geometry is returned\r\n\t\t\t\treturn Object.assign( {}, r, { scene: r.scene.clone() } );\r\n\r\n\t\t\t} else {\r\n\r\n\t\t\t\treturn Object.assign( {}, r );\r\n\r\n\t\t\t}\r\n\r\n\t\t} );\r\n\r\n\t},\r\n\r\n\tgetLoader: function ( loaderName, manager, loadercb ) {\r\n\r\n\t\tloadercb( new THREE[ loaderName ]( manager ) );\r\n\r\n\t},\r\n\r\n\textToLoader: function ( ext, maanger, loadercb, onError ) {\r\n\r\n\t\t// Get the name of the loader we need\r\n\t\text = ext ? ext.toLowerCase() : null;\r\n\t\tvar loaderName = this.loaderMap[ ext ] || null;\r\n\t\tif ( loaderName == null ) {\r\n\r\n\t\t\tonError( new Error( `Model Loader : No loader specified for '${ ext }' extension` ) );\r\n\r\n\t\t\treturn;\r\n\r\n\t\t}\r\n\r\n\t\t// If the loader isn't already cached the lets load it\r\n\t\tvar loader = this.cachedLoaders[ loaderName ] || null;\r\n\r\n\t\tif ( loader != null ) {\r\n\r\n\t\t\tloadercb( loader );\r\n\r\n\t\t} else {\r\n\r\n\t\t\tthis.getLoader( loaderName, this.manager, loader => {\r\n\r\n\t\t\t\tthis.cachedLoaders[ loaderName ] = loader;\r\n\t\t\t\tloadercb( loader );\r\n\r\n\t\t\t} );\r\n\r\n\t\t}\r\n\r\n\t},\r\n\r\n\tload: function ( url, onLoad, onProgress, onError, extOverride = null ) {\r\n\r\n\t\tonError = onError || ( e => console.error( e ) );\r\n\r\n\t\t// Grab the processed data from the cache if it's been\r\n\t\t// loaded already\r\n\t\tvar cachekey = this.toCacheKey( url );\r\n\t\tif ( this.modelCache[ cachekey ] != null ) {\r\n\r\n\t\t\tvar args = this.modelCache[ cachekey ];\r\n\t\t\trequestAnimationFrame( () => onLoad( ...this.cloneResult( args ) ) );\r\n\t\t\treturn;\r\n\r\n\t\t}\r\n\r\n\t\t// Get the extension associated the file so we can get the\r\n\t\t// appropriate loader\r\n\t\tvar extMatches = url.match( /\\.([^\\.\\/\\\\]+)$/ );\r\n\t\tvar urlext = extMatches ? extMatches[ 1 ] : null;\r\n\t\tvar ext = extOverride || urlext;\r\n\r\n\t\tif ( url == null ) {\r\n\r\n\t\t\tonError( new Error( 'Model Loader : No file extension found' ) );\r\n\t\t\treturn;\r\n\r\n\t\t}\r\n\r\n\r\n\t\tthis.extToLoader( ext, this.manager, loader => {\r\n\r\n\t\t\t// TODO: set the cross origin etc information\r\n\t\t\tloader.load( url, ( ...args ) => {\r\n\r\n\t\t\t\tthis.modelCache[ cachekey ] = this.cloneResult( args );\r\n\t\t\t\tonLoad( ...args );\r\n\r\n\t\t\t}, onProgress, onError );\r\n\r\n\t\t}, onError );\r\n\r\n\t},\r\n\r\n\tparse: function ( data, ext, onLoad, onError ) {\r\n\r\n\t\tonError = onError || ( e => console.error( e ) );\r\n\r\n\t\tthis.extToLoader( ext, this.manager, loader => {\r\n\r\n\t\t\tonLoad( loader.parse( data ) );\r\n\r\n\t\t}, onError );\r\n\r\n\t},\r\n\r\n\t// Clear the model cache\r\n\tclearCache: function () {\r\n\r\n\t\tthis.modelCache = {};\r\n\r\n\t}\r\n\r\n};\r\n"
+module.exports = "/**\r\n * @author Garrett Johnson / http://gkjohnson.github.io/\r\n * https://github.com/gkjohnson/collada-archive-loader-js\r\n */\r\n\r\nTHREE.ColladaArchiveLoader = function ( manager ) {\r\n\r\n    // TODO: Use this appropriately. It's a little more complicated because\r\n    // the final processing is async due to jszip\r\n    // this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;\r\n    this.manager = THREE.DefaultLoadingManager;\r\n\r\n    this._colladaLoader = new THREE.ColladaLoader();\r\n\r\n}\r\n\r\nTHREE.ColladaArchiveLoader.prototype = {\r\n\r\n    constructor: THREE.ColladaArchiveLoader,\r\n\r\n    load: function ( url, onLoad, onProgress, onError ) {\r\n\r\n        var scope = this;\r\n\r\n        var path = scope.path === undefined ? THREE.LoaderUtils.extractUrlBase( url ) : scope.path;\r\n\r\n        var loader = new THREE.FileLoader( this.manager );\r\n        loader.setResponseType( 'arraybuffer' );\r\n        loader.load( url, function ( data ) {\r\n\r\n            onLoad( scope.parse( data ) );\r\n\r\n        }, onProgress, onError );\r\n\r\n    },\r\n\r\n    parse: function( data ) {\r\n\r\n        function cleanPath( path ) {\r\n\r\n            if ( /^file:/.test( path ) ) {\r\n\r\n                console.warn( 'ColladaArchiveLoader : file:// URI not supported.' );\r\n                return '';\r\n\r\n            }\r\n\r\n            path = path.replace( /\\\\+/g, '/' );\r\n            path = path.replace( /^\\.?\\//, '' );\r\n\r\n            var spl = path.split( '/' );\r\n            var newpath = [];\r\n\r\n            while ( spl.length !== 0 ) {\r\n\r\n                var token = spl.shift();\r\n\r\n                if ( token === '..' ) newpath.pop();\r\n                else newpath.push( token );\r\n\r\n            }\r\n\r\n            return newpath.join( '/' );\r\n        }\r\n\r\n        if ( window.JSZip == null ) {\r\n\r\n            console.error( 'ColladaArchiveLoader : JSZip is required to unpack a Collada archive file.' );\r\n            return null;\r\n\r\n        }\r\n\r\n        try {\r\n\r\n            var zip = new JSZip(data);\r\n\r\n            // Find the entry file\r\n            var manifest = zip.file( 'manifest.xml' ).asText();\r\n            var entryfile;\r\n\r\n            if ( manifest == null ) {\r\n\r\n                var files = zip.file( /\\.dae$/i );\r\n\r\n                if ( files.length === 0 ) {\r\n\r\n                    console.error( 'ColladaArchiveLoader : No manifest found and no Collada file found to load.' );\r\n\r\n                }\r\n\r\n                if ( files.length >= 2 ) {\r\n\r\n                    console.error( 'ColladaArchiveLoader : No manifest found and more than one Collada file found to load.' );\r\n\r\n                }\r\n\r\n                entryfile = files[0].name;\r\n\r\n            } else {\r\n\r\n                var manifestxml = manifest && (new DOMParser()).parseFromString( manifest, 'application/xml' );\r\n                entryfile = [ ...manifestxml.children ]\r\n                    .filter( c => c.tagName === 'dae_root' )[0]\r\n                    .textContent\r\n                    .trim();\r\n\r\n            }\r\n\r\n            entryfile = cleanPath( entryfile );\r\n\r\n            // get the dae file and directory\r\n            var dir = entryfile.replace ( /[^\\/]*$/g, '' );\r\n            var daefile = zip.file( entryfile ).asText();\r\n\r\n            // parse the result\r\n            var result = this._colladaLoader.parse( daefile );\r\n\r\n            for ( var name in result.images ) {\r\n                \r\n                var image = result.images[ name ];\r\n                var path = decodeURI( image.init_from );\r\n                var texpath = cleanPath( `${ dir }/${ cleanPath(image) }` );\r\n                var data = zip.file( texpath ).asArrayBuffer();\r\n                var blob = new Blob( [ data ], 'application/octet-binary' );\r\n                image.build.src = URL.createObjectURL( blob );\r\n\r\n            }\r\n\r\n            // return the data\r\n            return result;\r\n\r\n        } catch ( e ) {\r\n\r\n            console.error( 'ColladaArchiveLoader : The Collada archive file is not valid.' );\r\n            console.error( e );\r\n\r\n            return null;\r\n\r\n        }\r\n\r\n    }\r\n\r\n}"
 
 /***/ }),
 /* 38 */
@@ -644,6 +497,30 @@ __webpack_require__(0)(__webpack_require__(39))
 
 /***/ }),
 /* 39 */
+/***/ (function(module, exports) {
+
+module.exports = "// model-viewer element\r\n// Loads and displays a 3D model\r\n\r\n// Events\r\n// model-change: Fires when a model is going to load\r\n// model-loaded: Fires when all the geometry has been fully loaded\r\nclass ModelViewer extends HTMLElement {\r\n\r\n    static get observedAttributes() {\r\n        return ['src', 'display-shadow', 'ambient-color', 'show-grid'];\r\n    }\r\n\r\n    get loadingManager() {\r\n        return this._loadingManager = this._loadingManager || new THREE.LoadingManager();\r\n    }\r\n\r\n    get modelLoader() {\r\n        return this._modelLoader = this._modelLoader || new THREE.ModelLoader(this.loadingManager);\r\n    }\r\n\r\n    get src() { return this.getAttribute('src') || ''; }\r\n    set src(val) { this.setAttribute('src', val); }\r\n\r\n    get displayShadow() { return this.hasAttribute('display-shadow') || false; }\r\n    set displayShadow(val) {\r\n        val = !!val;\r\n        val ? this.setAttribute('display-shadow', '') : this.removeAttribute('display-shadow');\r\n    }\r\n\r\n    get ambientColor() { return this.getAttribute('ambient-color') || '#455A64'; }\r\n    set ambientColor(val) {\r\n        val ? this.setAttribute('ambient-color', val) : this.removeAttribute('ambient-color');\r\n    }\r\n\r\n    get showGrid() { return this.hasAttribute('show-grid') || false; }\r\n    set showGrid(val) {\r\n        val ? this.setAttribute('show-grid', true) : this.removeAttribute('show-grid');\r\n    }\r\n\r\n    /* Lifecycle Functions */\r\n    constructor() {\r\n        super()\r\n\r\n        // Scene setup\r\n        const scene = new THREE.Scene();\r\n        const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);\r\n        camera.position.z = 10;\r\n\r\n        const ambientLight = new THREE.AmbientLight(this.ambientColor);\r\n        scene.add(ambientLight);\r\n\r\n        // Light setup\r\n        const dirLight = new THREE.DirectionalLight(0xffffff);\r\n        dirLight.position.set(0, 10, 0);\r\n        dirLight.shadow.mapSize.width = 2048;\r\n        dirLight.shadow.mapSize.height = 2048;\r\n        dirLight.castShadow = true;\r\n        \r\n        scene.add(dirLight);\r\n\r\n        // Containers setup\r\n        const scaleContainer = new THREE.Object3D();\r\n        scene.add(scaleContainer);\r\n\r\n        const rotator = new THREE.Object3D();\r\n        scaleContainer.add( rotator );\r\n\r\n        const plane = new THREE.Mesh(\r\n            new THREE.PlaneGeometry(),\r\n            new THREE.ShadowMaterial({ side: THREE.DoubleSide, transparent: true, opacity: 0.25 })\r\n        );\r\n        plane.rotation.set(-Math.PI / 2, 0, 0);\r\n        plane.scale.multiplyScalar(20);\r\n        plane.receiveShadow = true;\r\n        scaleContainer.add(plane);\r\n\r\n        const gridHelper = new THREE.GridHelper(10, 10, 0xffffff, 0xeeeeee);\r\n        gridHelper.material.transparent = true;\r\n        gridHelper.material.opacity = 0.6;\r\n        gridHelper.visible = false;\r\n        scaleContainer.add(gridHelper);\r\n\r\n        // Renderer setup\r\n        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });\r\n        renderer.setClearColor(0xffffff);\r\n        renderer.setClearAlpha(0);\r\n        renderer.shadowMap.enabled = true;\r\n\r\n        // Controls setup\r\n        const controls = new THREE.OrbitControls(camera, renderer.domElement);\r\n        controls.rotateSpeed = 2.0;\r\n        controls.zoomSpeed = 5;\r\n        controls.panSpeed = 2;\r\n        controls.enableZoom = true;\r\n        controls.enablePan = true;\r\n        controls.enableDamping = false;\r\n        controls.maxDistance = 50;\r\n        controls.minDistance = 0.25;\r\n        controls.addEventListener('change', () => this._dirty = true);\r\n        \r\n        this.rotator = rotator;\r\n        this.scaleContainer = scaleContainer;\r\n        this.renderer = renderer;\r\n        this.camera = camera;\r\n        this.controls = controls;\r\n        this.plane = plane;\r\n        this.gridHelper = gridHelper;\r\n        this.ambientLight = ambientLight;\r\n        this._model = null;\r\n        this._requestId = 0;\r\n\r\n        const _do = () => {\r\n            if(this.parentNode) {\r\n                this.refresh();\r\n                this.controls.update();\r\n                if (this._dirty) {\r\n                    this.renderer.render(scene, camera);\r\n                    this._dirty = false;\r\n                }\r\n            }\r\n            this._renderLoopId = requestAnimationFrame(_do);\r\n        }\r\n        _do();\r\n    }\r\n\r\n    connectedCallback() {\r\n        // Add our initialize styles for the element if they haven't\r\n        // been added yet\r\n        if (!this.constructor._styletag) {\r\n            const styletag = document.createElement('style');\r\n            styletag.innerHTML =\r\n            `\r\n                ${this.tagName} { display: block; }\r\n                ${this.tagName} canvas {\r\n                    width: 100%;\r\n                    height: 100%;\r\n                }\r\n            `;\r\n            document.head.appendChild(styletag);\r\n            this.constructor._styletag = styletag;\r\n        }\r\n\r\n        // add the renderer\r\n        if (this.childElementCount === 0) {\r\n            this.appendChild(this.renderer.domElement);\r\n        }\r\n\r\n        this.refresh();\r\n        requestAnimationFrame(() => this.refresh());\r\n    }\r\n\r\n    disconnectedCallback() {\r\n        cancelAnimationFrame(this._renderLoopId);\r\n    }\r\n\r\n    attributeChangedCallback(attr, oldval, newval) {\r\n        this._dirty = true;\r\n\r\n        switch(attr) {\r\n            case 'src': {\r\n                this._loadModel(this.src);\r\n                break;\r\n            }\r\n\r\n            case 'ambient-color': {\r\n                this.ambientLight.color.set(this.ambientColor);\r\n                break;\r\n            }\r\n\r\n            case 'show-grid': {\r\n                this.gridHelper.visible = this.showGrid;\r\n                break;\r\n            }\r\n        }\r\n    }\r\n\r\n    /* Public API */\r\n    refresh() {\r\n        const r = this.renderer;\r\n        const w = this.clientWidth;\r\n        const h = this.clientHeight;\r\n        const currsize = r.getSize();\r\n\r\n        if (currsize.width != w || currsize.height != h) {\r\n            this._dirty = true;\r\n\r\n            r.setPixelRatio(window.devicePixelRatio);\r\n            r.setSize(w, h, false);\r\n\r\n            this.camera.aspect = w / h;\r\n            this.camera.updateProjectionMatrix();\r\n        }\r\n    }\r\n\r\n    /* Private Functions */ \r\n    _loadModel(src) {\r\n\r\n        if (this._prevsrc === src) return;\r\n\r\n        if (this._model) {\r\n            this._model.parent.remove(this._model);\r\n            this._model = null;\r\n            this._dirty = true;\r\n        }\r\n\r\n        if (src) {    \r\n            this._prevsrc = src;\r\n\r\n            this.dispatchEvent(new CustomEvent('model-change', { bubbles: true, cancelable: true, composed: true, detail: src }));\r\n\r\n            // Keep track of this request and make\r\n            // sure it doesn't get overwritten by\r\n            // a subsequent one\r\n            this._requestId ++;\r\n            const requestId = this._requestId;\r\n\r\n            this.modelLoader\r\n                .load(src, res => {\r\n                    if (this._requestId !== requestId) return;\r\n\r\n                    const mat = new THREE.MeshBasicMaterial( { color: 0xffffff } );\r\n                    let obj = res.scene || res.object || res;\r\n                    obj = obj.isBufferGeometry || obj.isGeometry ? new THREE.Mesh(obj, mat) : obj;\r\n\r\n                    this._addModel(obj);\r\n\r\n                    this.dispatchEvent(new CustomEvent('model-loaded', { bubbles: true, cancelable: true, composed: true }));\r\n                }, null, err => {\r\n                    this.dispatchEvent(new CustomEvent('error', { bubbles: true, cancelable: true, composed: true, detail: err }));\r\n                });\r\n\r\n        }\r\n    }\r\n\r\n    _addModel(obj) {\r\n        const rotator = this.rotator;\r\n        const scaleContainer = this.scaleContainer;\r\n        const plane = this.plane;\r\n        const gridHelper = this.gridHelper;\r\n\r\n        this._model = obj;\r\n\r\n        // Get the bounds of the model and scale and set appropriately\r\n        obj.updateMatrixWorld( true );\r\n        const box = new THREE.Box3().expandByObject( obj );\r\n        const sphere = box.getBoundingSphere( new THREE.Sphere() );\r\n        const s = 3 / sphere.radius;\r\n\r\n        rotator.add( obj );\r\n        rotator.rotation.set( 0, 0, 0 );\r\n        obj.position\r\n            .copy( sphere.center )\r\n            .negate();\r\n\r\n        scaleContainer.scale.set( 1, 1, 1 ).multiplyScalar( s );\r\n\r\n        // add an additional tiny offset so the shadow plane won't\r\n        // z-fight with the bottom of the model\r\n        plane.position.y = obj.position.y + box.min.y - 1e-3;\r\n        plane\r\n            .scale\r\n            .set( 1, 1, 1 )\r\n            .multiplyScalar( 100 / s );\r\n\r\n        gridHelper.position.copy(plane.position);\r\n        gridHelper.position.y -= 1e-3;\r\n\r\n        // make sure the obj will cast shadows\r\n        obj.traverse(c => {\r\n\r\n            if ( 'castShadow' in c ) c.castShadow = true;\r\n\r\n            if ( c instanceof THREE.Mesh ) {\r\n\r\n                if ( c.material instanceof THREE.MeshBasicMaterial ) {\r\n\r\n                    const mat = new THREE.MeshPhongMaterial({ color: 0x888888 });\r\n                    if ( c.geometry instanceof THREE.BufferGeometry && 'color' in c.geometry.attributes\r\n                        || c.geometry instanceof THREE.Geometry ) {\r\n\r\n                        mat.vertexColors = THREE.VertexColors;\r\n\r\n                    }\r\n\r\n                    if ( c.geometry instanceof THREE.BufferGeometry && !( 'normal' in c.geometry.attributes )) {\r\n\r\n                        c.geometry.computeVertexNormals();\r\n\r\n                    }\r\n\r\n                    c.material = mat;\r\n\r\n                }\r\n\r\n            }\r\n\r\n        });\r\n\r\n        this._dirty = true;\r\n\r\n    }\r\n}\r\n\r\nwindow.ModelViewer = ModelViewer"
+
+/***/ }),
+/* 40 */
+/***/ (function(module, exports, __webpack_require__) {
+
+__webpack_require__(0)(__webpack_require__(41))
+
+/***/ }),
+/* 41 */
+/***/ (function(module, exports) {
+
+module.exports = "/**\r\n * @author Garrett Johnson / http://gkjohnson.github.io/\r\n * https://github.com/gkjohnson/threejs-model-loader\r\n */\r\n\r\nTHREE.ModelLoader = function ( manager ) {\r\n\r\n\tthis.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;\r\n\r\n\tthis.modelCache = {};\r\n\r\n\tthis.cachedLoaders = {};\r\n\tthis.loaderMap = {\r\n\r\n\t\t'3mf': '3MFLoader',\r\n\t\t'amf': 'AMFLoader',\r\n\t\t'bvh': 'BVHLoader',\r\n\t\t'assimp': 'AssimpLoader',\r\n\t\t'babylon': 'BabylonLoader',\r\n\t\t'dae': 'ColladaLoader',\r\n\t\t'drc': 'DRACOLoader',\r\n\t\t'fbx': 'FBXLoader',\r\n\t\t'gcode': 'GCodeLoader',\r\n\t\t'gltf': 'GLTFLoader',\r\n\t\t'glb': 'GLTFLoader',\r\n\t\t'kmz': 'KMZLoader',\r\n\t\t'md2': 'MD2Loader',\r\n\t\t'mmd': 'MMDLoader',\r\n\t\t'obj': 'OBJLoader',\r\n\t\t'ply': 'PLYLoader',\r\n\t\t'pcd': 'PCDLoader',\r\n\t\t'prwm': 'PRWMLoader',\r\n\t\t'stl': 'STLLoader',\r\n\t\t'tds': 'TDSLoader',\r\n\t\t'vtk': 'VTKLoader',\r\n\t\t'vtp': 'VTKLoader',\r\n\t\t'x': 'XLoader',\r\n\t\t'zae': 'ColladaArchiveLoader',\r\n\r\n\t};\r\n\r\n};\r\n\r\nTHREE.ModelLoader.prototype = {\r\n\r\n\tconstructor: THREE.ColladaLoader,\r\n\r\n\ttoCacheKey: function ( url ) {\r\n\r\n\t\t// https://stackoverflow.com/questions/14780350/convert-relative-path-to-absolute-using-javascript\r\n\t\tthis.linkTag = this.linkTag || document.createElement( 'a' );\r\n\t\tthis.linkTag.href = url;\r\n\t\treturn this.linkTag.href;\r\n\r\n\t},\r\n\r\n\tcloneResult: function ( argsarr ) {\r\n\r\n\t\treturn argsarr.map( r => {\r\n\r\n\t\t\tif ( r.isObject3D ) {\r\n\r\n\t\t\t\treturn r.clone();\r\n\t\t\t\r\n\t\t\t} else if ( 'scene' in r ) {\r\n\r\n\t\t\t\t// Handle the 'ColladaLoader' case where more than\r\n\t\t\t\t// just the geometry is returned\r\n\t\t\t\treturn Object.assign( {}, r, { scene: r.scene.clone() } );\r\n\r\n\t\t\t} else {\r\n\r\n\t\t\t\treturn Object.assign( {}, r );\r\n\r\n\t\t\t}\r\n\r\n\t\t} );\r\n\r\n\t},\r\n\r\n\tgetLoader: function ( loaderName, manager, loadercb ) {\r\n\r\n\t\tloadercb( new THREE[ loaderName ]( manager ) );\r\n\r\n\t},\r\n\r\n\textToLoader: function ( ext, maanger, loadercb, onError ) {\r\n\r\n\t\t// Get the name of the loader we need\r\n\t\text = ext ? ext.toLowerCase() : null;\r\n\t\tvar loaderName = this.loaderMap[ ext ] || null;\r\n\t\tif ( loaderName == null ) {\r\n\r\n\t\t\tonError( new Error( `Model Loader : No loader specified for '${ ext }' extension` ) );\r\n\r\n\t\t\treturn;\r\n\r\n\t\t}\r\n\r\n\t\t// If the loader isn't already cached the lets load it\r\n\t\tvar loader = this.cachedLoaders[ loaderName ] || null;\r\n\r\n\t\tif ( loader != null ) {\r\n\r\n\t\t\tloadercb( loader );\r\n\r\n\t\t} else {\r\n\r\n\t\t\tthis.getLoader( loaderName, this.manager, loader => {\r\n\r\n\t\t\t\tthis.cachedLoaders[ loaderName ] = loader;\r\n\t\t\t\tloadercb( loader );\r\n\r\n\t\t\t} );\r\n\r\n\t\t}\r\n\r\n\t},\r\n\r\n\tload: function ( url, onLoad, onProgress, onError, extOverride = null ) {\r\n\r\n\t\tonError = onError || ( e => console.error( e ) );\r\n\r\n\t\t// Grab the processed data from the cache if it's been\r\n\t\t// loaded already\r\n\t\tvar cachekey = this.toCacheKey( url );\r\n\t\tif ( this.modelCache[ cachekey ] != null ) {\r\n\r\n\t\t\tvar args = this.modelCache[ cachekey ];\r\n\t\t\trequestAnimationFrame( () => onLoad( ...this.cloneResult( args ) ) );\r\n\t\t\treturn;\r\n\r\n\t\t}\r\n\r\n\t\t// Get the extension associated the file so we can get the\r\n\t\t// appropriate loader\r\n\t\tvar extMatches = url.match( /\\.([^\\.\\/\\\\]+)$/ );\r\n\t\tvar urlext = extMatches ? extMatches[ 1 ] : null;\r\n\t\tvar ext = extOverride || urlext;\r\n\r\n\t\tif ( url == null ) {\r\n\r\n\t\t\tonError( new Error( 'Model Loader : No file extension found' ) );\r\n\t\t\treturn;\r\n\r\n\t\t}\r\n\r\n\t\tthis.extToLoader( ext, this.manager, loader => {\r\n\r\n\t\t\t// TODO: set the cross origin etc information\r\n\t\t\tloader.load( url, ( ...args ) => {\r\n\r\n\t\t\t\tthis.modelCache[ cachekey ] = this.cloneResult( args );\r\n\t\t\t\tonLoad( ...args );\r\n\r\n\t\t\t}, onProgress, onError );\r\n\r\n\t\t}, onError );\r\n\r\n\t},\r\n\r\n\tparse: function ( data, ext, onLoad, onError ) {\r\n\r\n\t\tonError = onError || ( e => console.error( e ) );\r\n\r\n\t\tthis.extToLoader( ext, this.manager, loader => {\r\n\r\n\t\t\tonLoad( loader.parse( data ) );\r\n\r\n\t\t}, onError );\r\n\r\n\t},\r\n\r\n\t// Clear the model cache\r\n\tclearCache: function () {\r\n\r\n\t\tthis.modelCache = {};\r\n\r\n\t}\r\n\r\n};\r\n"
+
+/***/ }),
+/* 42 */
+/***/ (function(module, exports, __webpack_require__) {
+
+__webpack_require__(0)(__webpack_require__(43))
+
+/***/ }),
+/* 43 */
 /***/ (function(module, exports) {
 
 module.exports = "// Creates a ServiceWorker to intercept requests and serve\r\n// files from zip files instead.\r\n\r\nwindow.ZipServer =\r\nclass ZipServer {\r\n\r\n    // Generate a 9 digit random id\r\n    static _generateId() {\r\n\r\n        return Math.random().toString(36).substr(2, 9);\r\n\r\n    }\r\n\r\n    static _dataTransferToZip(dataTransfer) {\r\n\r\n        if (!(dataTransfer instanceof DataTransfer)) {\r\n\r\n            throw new Error('Data must be of type \"DataTransfer\"', dataTransfer);\r\n\r\n        }        \r\n\r\n        return new Promise(resolve => {\r\n            // keep track of how many async file read operations we\r\n            // do so we know when they've all finished\r\n            const zip = new JSZip();\r\n            let ct = 0;\r\n\r\n            // iterate down the file tree, firing a callback for every file\r\n            function recurseDirectory(item, filecb) {\r\n                if (item.isFile) {\r\n                    filecb(item);\r\n                } else {\r\n                    let reader = item.createReader();\r\n                    reader.readEntries(et => {\r\n                        et.forEach(e => {\r\n                            recurseDirectory(e, filecb);\r\n                        });\r\n                    })\r\n                }\r\n            }\r\n\r\n            function loadFile(e, name) {\r\n                zip.file(name, e.target.result);\r\n                ct --;\r\n                if (ct === 0) resolve(zip.generate({ type: \"arraybuffer\" }));\r\n            \r\n            }\r\n            \r\n            // Traverse down the tree and add the files into the zip\r\n            const dtitems = dataTransfer.items && [...dataTransfer.items];\r\n            const dtfiles = [...dataTransfer.files];\r\n\r\n            if (dtitems && dtitems.length && dtitems[0].webkitGetAsEntry) {\r\n            \r\n                for (let i = 0; i < dtitems.length; i ++) {\r\n                    const item = dtitems[i];\r\n                    const entry = item.webkitGetAsEntry();\r\n                    recurseDirectory(entry, f => {\r\n                        ct ++;\r\n                        f.file(res => {\r\n                            const fr = new FileReader();\r\n                            fr.onload = e => loadFile(e, f.fullPath);\r\n                            fr.readAsArrayBuffer(res);\r\n                        });\r\n                    });\r\n                }\r\n\r\n            } else {\r\n                \r\n                dtfiles\r\n                    .filter(file => file.size !== 0)\r\n                    .forEach(file => {\r\n                        ct ++;\r\n                        const fr = new FileReader();\r\n                        fr.onload = e => loadFile(e, file.name);\r\n                        fr.readAsArrayBuffer(file);\r\n                    });\r\n            \r\n                requestAnimationFrame(() => resolve(null));\r\n            \r\n            }\r\n        });\r\n    }\r\n\r\n    // Returns the URL to load the worker script from\r\n    static get _getWorkerUrl() {\r\n\r\n        if (!this._workerUrl) {\r\n            const el = document.createElement('a');\r\n            el.href = './zipServerWorker.js';\r\n            this._workerUrl = el.href;\r\n        }\r\n\r\n        return this._workerUrl;\r\n\r\n    }\r\n\r\n    // the associated worker and whether or not the worker\r\n    // is ready to handle requests\r\n    get ready() { return !!this._serviceWorker; }\r\n    get serviceWorker() { return this._serviceWorker; }\r\n    get enabled() { return !this._disabled; }\r\n    set enabled(enabled) { \r\n        this._disabled = !enabled;\r\n        if (this._serviceWorker) this._serviceWorker.postMessage({ disabled: !enabled });\r\n    }\r\n\r\n    constructor() {\r\n\r\n        this._ids = [];\r\n        this._serviceWorker = null;\r\n        this._id = ZipServer._generateId();\r\n\r\n        // before unload, clear all files\r\n        window.addEventListener('beforeunload', () => this.clearAll());\r\n    }\r\n\r\n    /* Public API */\r\n    // Returns a promise that resolves with the service worker\r\n    // once it is registered and ready \r\n    register() {\r\n\r\n        return new Promise((resolve, reject) => {\r\n            navigator.serviceWorker.register(ZipServer._getWorkerUrl).then(reg => {\r\n                if (!reg.active) {\r\n                    (reg.installing || reg.waiting)\r\n                        .addEventListener('statechange', () => {\r\n                            this._serviceWorker = reg.active;\r\n                            this.enabled = this.enabled;\r\n                            resolve(reg.active)\r\n                        });\r\n                } else {\r\n                    this._serviceWorker = reg.active;\r\n                    this.enabled = this.enabled;\r\n                    requestAnimationFrame(() => resolve(reg.active));\r\n                }\r\n            });\r\n        });\r\n\r\n    }\r\n\r\n    // Unregisters ther service. This will unregister it from any\r\n    // shared clients, as well.\r\n    unregister() {\r\n\r\n        if (!this.serviceWorker) {\r\n\r\n            throw new Error('ZipServer has no service worker to unregister');\r\n        \r\n        }\r\n\r\n        this._serviceWorker.unregister();\r\n        this._serviceWorker = null;\r\n\r\n    }\r\n\r\n    // Takes a buffer representing a zip file to serve files from. If the\r\n    // data is an ArrayBuffer and `transfer` == true, then the buffer is\r\n    // transferred to the worker and will no longer be accessible.\r\n\r\n    // Returns a handle with an id and dispose function for removing the zip\r\n    addZip(buffer, transfer = true) {\r\n\r\n        if (!this.ready) {\r\n\r\n            throw new Error('ZipServer service worker not intialized, yet.');\r\n\r\n        }\r\n\r\n        // add the buffer\r\n        const id = this._generateFileId();\r\n        const transferable = [];\r\n\r\n        if (buffer instanceof ArrayBuffer && transfer) transferable.push(buffer);\r\n        \r\n        this.serviceWorker.postMessage({ id, buffer }, transferable);\r\n        this._ids.push(id);\r\n\r\n        return {\r\n\r\n            id,\r\n            dispose: () => this.remove(id)\r\n        \r\n        }\r\n\r\n    }\r\n\r\n    // Create a zip based on a dataTransfer object retrieved from an event like\r\n    // draggin and dropping of files.\r\n    addDataTransfer(dataTransfer) {\r\n\r\n        if (!this.ready) {\r\n\r\n            throw new Error('ZipServer service worker not intialized, yet.');\r\n\r\n        }\r\n\r\n        return ZipServer\r\n            ._dataTransferToZip(dataTransfer)\r\n            .then(zip => this.addZip(zip));\r\n\r\n    }\r\n\r\n    // Removes the zip file with the provided id from being served\r\n    remove(id) {\r\n\r\n        if (!this.ready) {\r\n\r\n            throw new Error('ZipServer service worker not intialized, yet.');\r\n\r\n        }\r\n\r\n        const index = this._ids.indexOf(id);\r\n        if (!index === -1) {\r\n\r\n            throw new Error(`Id ${ id } not a registered zip file`);\r\n\r\n        }\r\n\r\n        this._serviceWorker.postMessage({ id, buffer: null });\r\n        this._ids.splice(index, 1);\r\n        \r\n    }\r\n\r\n    // Clears all the registered zip files being served from this client instance\r\n    clearAll() {\r\n\r\n        this._ids.forEach(n => this.remove(n));\r\n\r\n    }\r\n\r\n    /* Private Functions */\r\n    _generateFileId() {\r\n\r\n        let id;\r\n        while (!id || this._ids.indexOf(id) !== -1) {\r\n\r\n            id = `${ this._id }_${ ZipServer._generateId() }`;\r\n\r\n        }\r\n\r\n        return id;\r\n\r\n    }\r\n\r\n}"

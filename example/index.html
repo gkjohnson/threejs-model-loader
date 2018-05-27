@@ -1,347 +1,212 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>THREEjs Model Loader</title>
+    <title>THREEjs Model Loader</title>
 
-	<script src="../node_modules/jszip/dist/jszip.min.js"></script>
-	<script src="../node_modules/three/build/three.min.js"></script>
-	<script src="../node_modules/three/examples/js/libs/inflate.min.js"></script>
-	<script src="../node_modules/three/examples/js/loaders/3MFLoader.js"></script>
-	<script src="../node_modules/three/examples/js/loaders/AMFLoader.js"></script>
-	<script src="../node_modules/three/examples/js/loaders/AssimpLoader.js"></script>
-	<script src="../node_modules/three/examples/js/loaders/AssimpJSONLoader.js"></script>
-	<script src="../node_modules/three/examples/js/loaders/ColladaLoader.js"></script>
-	<script src="../node_modules/three/examples/js/loaders/FBXLoader.js"></script>
-	<script src="../node_modules/three/examples/js/loaders/GLTFLoader.js"></script>
-	<script src="../node_modules/three/examples/js/loaders/KMZLoader.js"></script>
-	<script src="../node_modules/three/examples/js/loaders/OBJLoader.js"></script>
-	<script src="../node_modules/three/examples/js/loaders/PLYLoader.js"></script>
-	<script src="../node_modules/three/examples/js/loaders/PCDLoader.js"></script>
-	<script src="../node_modules/three/examples/js/loaders/STLLoader.js"></script>
-	<script src="../node_modules/three/examples/js/loaders/VTKLoader.js"></script>
-	<script src="../node_modules/collada-archive-loader/ColladaArchiveLoader.js"></script>
+    <script src="../node_modules/jszip/dist/jszip.min.js"></script>
+    <script src="../node_modules/three/build/three.min.js"></script>
+    <script src="../node_modules/three/examples/js/libs/inflate.min.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/3MFLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/AMFLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/AssimpLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/AssimpJSONLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/ColladaLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/FBXLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/KMZLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/OBJLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/PLYLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/PCDLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/STLLoader.js"></script>
+    <script src="../node_modules/three/examples/js/loaders/VTKLoader.js"></script>
+    <script src="../node_modules/three/examples/js/controls/OrbitControls.js"></script>
+    <script src="../node_modules/collada-archive-loader/ColladaArchiveLoader.js"></script>
 
-	<script src="../ModelLoader.js"></script>
-	<script src="./ZipServer.js"></script>
+    <script src="../model-viewer-element.js"></script>
+    <script src="../ModelLoader.js"></script>
+    <script src="./ZipServer.js"></script>
 
-	<style>
-		* {
-			margin: 0;
-			padding: 0;
-			overflow: hidden;
-		}
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
 
-		#container {
-			position: absolute;
-			width: 100%;
-		}
+        html, body {
+            box-sizing: border-box;
+            width: 100%;
+            height: 100%;
+        }
 
-		#container > * {
-			padding: 5px;
-		}
+        #container {
+            position: absolute;
+            width: 100%;
+        }
 
-		#error {
-			background: #E91E63;
-		}
+        #container > * {
+            padding: 5px;
+        }
 
-		#error:empty {
-			padding: 0;
-		}
+        #error {
+            background: #E91E63;
+        }
 
-		div {
-			color: white;
-			text-align: center;
-			pointer-events: none;
-			font-family:Monospace;
-			font-size:13px;
-		}
-	</style>
+        #error:empty {
+            padding: 0;
+        }
+
+        div {
+            color: white;
+            text-align: center;
+            pointer-events: none;
+            font-family:Monospace;
+            font-size:13px;
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            background: #FFC107;
+        }
+    </style>
 </head>
 <body>
-	<div id="container">
-		<div id="error"></div>
-		<div>Drag geometry files and depencies to load and view them </br>
-		( Dragging folders will only work in chrome )</div>
-	</div>
-	
-	<script>
+    <div id="container">
+        <div id="error"></div>
+        <div>Drag geometry files and depencies to load and view them </br>
+        ( Dragging folders will only work in chrome )</div>
+    </div>
 
-		const bgColors = [
-			0xFFC107,
-			0xF06292,
-			0x009688,
-			0x3F51B5,
-			0xCDDC39
-		]
+    <model-viewer></model-viewer>
+    
+    <script>
 
-		// Renderer and scene setup
-		const scene = new THREE.Scene();
-		const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 2000 );
-		camera.position.set( 0, 3, 6.5 );
-		camera.lookAt( new THREE.Vector3( 0, 0, 0 ) );
+        customElements.define('model-viewer', ModelViewer);
+        const errorel = document.getElementById( 'error' );
+        const viewer = document.querySelector('model-viewer');
+        const bgColors = [
+                '#FFC107',
+                '#F06292',
+                '#009688',
+                '#3F51B5',
+                '#CDDC39'
+            ];
 
-		const ambientLight = new THREE.AmbientLight( 0xcccccc, 0.4 );
-		scene.add( ambientLight );
+        viewer.addEventListener('error', e => errorel.innerText = e.detail);
+        viewer.addEventListener('model-change', e => errorel.innerText = '');
 
-		const directionalLight = new THREE.DirectionalLight();
-		directionalLight.position.set( 10, 10, 0 );
-        directionalLight.shadow.mapSize.width = 2048;
-        directionalLight.shadow.mapSize.height = 2048;
-        directionalLight.castShadow = true;
-		scene.add( directionalLight );
+        // overriding the getLoader function so loaders can be
+        // loaded as-needed
+        viewer.modelLoader.getLoader = function ( loaderName, manager, loadercb ) {
 
-		const scaleContainer = new THREE.Object3D();
-		scene.add(scaleContainer);
+            function createLoader( ln ) {
 
-		const rotator = new THREE.Object3D();
-		scaleContainer.add( rotator );
+                ln = ln || loaderName;
 
-		const plane = new THREE.Mesh(
-			new THREE.PlaneGeometry(),
-			new THREE.ShadowMaterial({ side: THREE.DoubleSide, transparent: true, opacity: 0.25 })
-		);
-		plane.rotation.set(-Math.PI / 2, 0, 0);
-		plane.scale.multiplyScalar(20);
-		plane.receiveShadow = true;
-		scaleContainer.add(plane);
+                return new THREE[ ln ]( manager );
 
-		const renderer = new THREE.WebGLRenderer( { antialias: true } );
-		renderer.setPixelRatio( window.devicePixelRatio );
-		renderer.setSize( window.innerWidth, window.innerHeight );
-		renderer.setClearColor( bgColors[0] );
-		renderer.shadowMap.enabled = true;
-		document.body.appendChild( renderer.domElement );
+            }
 
+            function getSource( name ) {
+                
+                let f =
+                    fetch( `../node_modules/three/examples/js/loaders/${ name }.js` )
+                        .then( res => res.text() )
+                f.then( text => eval( text ) );
 
-		// overriding the getLoader function so loaders can be
-		// loaded as-needed
-		const errorel = document.getElementById( 'error' );
-		const manager = new THREE.LoadingManager();
-		const loader = new THREE.ModelLoader( manager );
-		loader.getLoader = function ( loaderName, manager, loadercb ) {
+                return f;
 
-			function createLoader( ln ) {
+            }
 
-				ln = ln || loaderName;
+            if ( THREE[ loaderName ] == null ) {
 
-				return new THREE[ ln ]( manager );
+                if ( loaderName === 'OBJLoader2' ) {
 
-			}
+                    getSource( 'LoaderSupport' )
+                        .then(() => getSource( loaderName ))
+                        .then(() => loadercb( createLoader() ));
 
-			function getSource( name ) {
-				
-				let f =
-					fetch( `../node_modules/three/examples/js/loaders/${ name }.js` )
-						.then( res => res.text() )
-				f.then( text => eval( text ) );
+                } else if ( loaderName === 'KMZLoader' ) {
 
-				return f;
+                    getSource( 'ColladaLoader' )
+                        .then(() => getSource( loaderName ))
+                        .then(() => loadercb( createLoader() ));
 
-			}
+                } else if ( loaderName === '3MFLoader') {
 
-			if ( THREE[ loaderName ] == null ) {
+                    getSource( loaderName )
+                        .then(() => loadercb( createLoader( 'ThreeMFLoader' ) ));
 
-				if ( loaderName === 'OBJLoader2' ) {
+                } else {
 
-					getSource( 'LoaderSupport' )
-						.then(() => getSource( loaderName ))
-						.then(() => loadercb( createLoader() ));
+                    getSource( loaderName )
+                        .then(() => loadercb( createLoader() ));
+                }
 
-				} else if ( loaderName === 'KMZLoader' ) {
+            } else {
 
-					getSource( 'ColladaLoader' )
-						.then(() => getSource( loaderName ))
-						.then(() => loadercb( createLoader() ));
+                loadercb( createLoader() );
 
-				} else if ( loaderName === '3MFLoader') {
+            }
 
-					getSource( loaderName )
-						.then(() => loadercb( createLoader( 'ThreeMFLoader' ) ));
-
-				} else {
-
-					getSource( loaderName )
-						.then(() => loadercb( createLoader() ));
-				}
-
-			} else {
-
-				loadercb( createLoader() );
-
-			}
-
-		};
-
-		// Load the model into the scene. Returns a promise that resolves with a file extension
-		// if the file was unable to load. Null otherwise
-		function loadModel( file ) {
-
-			return new Promise( resolve => {
-				
-				// The file name will be able to be loaded from the
-				// zip server
-				const name = file.name
-				loader.load( name, m => {
-
-					// disambiguate the file to add between all the parsers.
-					const mat = new THREE.MeshBasicMaterial( { color: 0xffffff } );
-					let obj = m.scene || m.object || m;
-					obj = obj instanceof THREE.BufferGeometry || obj instanceof THREE.Geometry
-							? new THREE.Mesh( obj, mat ) : obj;
-
-					// Get the bounds of the model and scale and set appropriately
-					obj.updateMatrixWorld( true );
-					const box = new THREE.Box3().expandByObject( obj );
-					const sphere = box.getBoundingSphere( new THREE.Sphere() );
-					const s = 3 / sphere.radius;
-
-					rotator.add( obj );
-					rotator.rotation.set( 0, 0, 0 );
-					obj.position
-						.copy( sphere.center )
-						.negate();
-
-					scaleContainer.scale.set( 1, 1, 1 ).multiplyScalar( s );
-
-					plane.position.y = obj.position.y + box.min.y;
-					plane
-						.scale
-						.set( 1, 1, 1 )
-						.multiplyScalar( 100 / s );
-
-					obj.traverse(c => {
-
-						if ( 'castShadow' in c ) c.castShadow = true;
-
-						if ( c instanceof THREE.Mesh ) {
-
-							if ( c.material instanceof THREE.MeshBasicMaterial ) {
-
-								console.log(c);
-								const mat = new THREE.MeshPhongMaterial({ color: 0x888888 });
-								if ( c.geometry instanceof THREE.BufferGeometry && 'color' in c.geometry.attributes
-									|| c.geometry instanceof THREE.Geometry ) {
-
-									mat.vertexColors = THREE.VertexColors;
-
-								}
-
-								if ( c.geometry instanceof THREE.BufferGeometry && !( 'normal' in c.geometry.attributes )) {
-
-									c.geometry.computeVertexNormals();
-
-								}
-
-								c.material = mat;
-
-							}
-
-						}
-
-					});
-
-					resolve(null);
-				
-				}, null, err => {
-				
-					resolve(err);
-				
-				});
-
-			});
-
-		}
+        };
  
-		document.addEventListener( 'dragover', e => e.preventDefault() );
-		document.addEventListener( 'dragenter', e => e.preventDefault() );
-		document.addEventListener( 'drop', e => {
+        document.addEventListener( 'dragover', e => e.preventDefault() );
+        document.addEventListener( 'dragenter', e => e.preventDefault() );
+        document.addEventListener( 'drop', e => {
 
-			e.preventDefault();
+            e.preventDefault();
 
-			// Clear the scene and error before loading
-			while (rotator.children.length) rotator.remove(rotator.children[0]);
-			errorel.innerText = '';
+            const newcol = bgColors.shift();
+            bgColors.push(newcol);
+            viewer.ambientColor = '#' + new THREE.Color(newcol).lerp(new THREE.Color(0xffffff), 0.7).getHexString();
+            viewer.style.backgroundColor = newcol;
 
-			const newcol = bgColors.shift();
-			bgColors.push(newcol);
-			ambientLight.color.set(newcol).lerp(new THREE.Color(0xffffff), 0.7);
-			renderer.setClearColor(newcol);
+            // Create the zip
+            // TODO: Packing and then unpacking data to and from a zip that we
+            // already have as a blob is not the most efficient way of loading
+            // these files
+            let filenames = [...e.dataTransfer.files].map(f => f.name);
+            ZipServer
+                ._dataTransferToZip(e.dataTransfer)
+                .then(buffer => new JSZip(buffer))
+                .then(zip => {
 
-			// Create the zip
-			// TODO: Packing and then unpacking data to and from a zip that we
-			// already have as a blob is not the most efficient way of loading
-			// these files
-			let dtfiles = [...e.dataTransfer.files];
-			ZipServer
-				._dataTransferToZip(e.dataTransfer)
-				.then(buffer => new JSZip(buffer))
-				.then(zip => {
+                    viewer.loadingManager.setURLModifier(url => {
 
-					manager.setURLModifier(url => {
+                        url = url.replace(/^[\.\\\/]*/, '');
 
-						url = url.replace(/^[\.\\\/]*/, '');
+                        const files = zip.file(new RegExp(url));
+                        if (files.length) {
 
-						const files = zip.file(new RegExp(url));
-						if (files.length) {
+                            const ab = files.pop().asArrayBuffer();
+                            const newurl = URL.createObjectURL( new Blob( [ab] ) );
 
-							const ab = files.pop().asArrayBuffer();
-							const newurl = URL.createObjectURL( new Blob( [ab] ) );
+                            requestAnimationFrame(() => URL.revokeObjectURL(newurl));
 
-							requestAnimationFrame(() => URL.revokeObjectURL(newurl));
+                            return newurl;
 
-							return newurl;
+                        }
 
-						}
+                        return url;
+                    });
 
-						return url;
-					})
+                    const extregex = new RegExp(
+                        `(${ Object
+                            .keys(viewer.modelLoader.loaderMap)
+                            .join('|')
+                        })$`);
 
-					requestAnimationFrame( () => {
-						let promises = dtfiles.map(file => loadModel( file ));
+                    viewer.src = 
+                        filenames
+                            .filter(n => extregex.test(n))
+                            .pop();
 
-						// Load the model and report an error if nothing could
-						// be displayed
-						Promise
-							.all(promises)
-							.then( res => {
+                } );
 
-								loader.clearCache();
+        } );
 
-								const success = res.indexOf(null) !== -1;
-								if (!success) { 
-
-									console.log(res)
-									errorel.innerText = res.join('\n');
-
-								}
-
-								manager.setURLModifier(null);
-
-							} );
-					} );
-
-				} );
-
-		} );
-
-		window.addEventListener( 'resize', () => {
-
-			camera.aspect = window.innerWidth / window.innerHeight;
-			camera.updateProjectionMatrix();
-
-			renderer.setSize( window.innerWidth, window.innerHeight );
-
-		} );
-
-		( function renderLoop() {
-
-			rotator.rotateY( 0.005 );
-			renderer.render( scene, camera );
-			requestAnimationFrame( renderLoop );
-
-		} )();
-
-
-	</script>
+    </script>
 </body>
 </html>
