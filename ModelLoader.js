@@ -145,7 +145,6 @@ THREE.ModelLoader.prototype = {
 
 		}
 
-
 		this.extToLoader( ext, this.manager, loader => {
 
 			// TODO: set the cross origin etc information
