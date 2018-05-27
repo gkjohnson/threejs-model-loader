@@ -78,7 +78,7 @@
         ( Dragging folders will only work in chrome )</div>
     </div>
 
-    <model-viewer src="../dolphins_colored.ply" ambient-color="#FFC107"></model-viewer>
+    <model-viewer></model-viewer>
     
     <script>
 
@@ -160,7 +160,7 @@
 
             const newcol = bgColors.shift();
             bgColors.push(newcol);
-            viewer.ambientColor = newcol;
+            viewer.ambientColor = '#' + new THREE.Color(newcol).lerp(new THREE.Color(0xffffff), 0.7).getHexString();
             viewer.style.backgroundColor = newcol;
 
             // Create the zip

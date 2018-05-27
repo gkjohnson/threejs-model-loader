@@ -235,7 +235,9 @@ class ModelViewer extends HTMLElement {
 
         scaleContainer.scale.set( 1, 1, 1 ).multiplyScalar( s );
 
-        plane.position.y = obj.position.y + box.min.y;
+        // add an additional tiny offset so the shadow plane won't
+        // z-fight with the bottom of the model
+        plane.position.y = obj.position.y + box.min.y - 1e-3;
         plane
             .scale
             .set( 1, 1, 1 )
