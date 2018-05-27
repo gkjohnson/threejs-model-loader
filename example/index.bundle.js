@@ -191,7 +191,8 @@ __webpack_require__(38);
 		// overriding the getLoader function so loaders can be
 		// loaded as-needed
 		const errorel = document.getElementById( 'error' );
-		const loader = new THREE.ModelLoader();
+		const manager = new THREE.LoadingManager();
+		const loader = new THREE.ModelLoader( manager );
 		loader.getLoader = function ( loaderName, manager, loadercb ) {
 
 			function createLoader( ln ) {
@@ -326,10 +327,6 @@ __webpack_require__(38);
 
 		}
  
-
-		let zipserver = new ZipServer();
-		zipserver.register();
-
 		document.addEventListener( 'dragover', e => e.preventDefault() );
 		document.addEventListener( 'dragenter', e => e.preventDefault() );
 		document.addEventListener( 'drop', e => {
@@ -346,10 +343,33 @@ __webpack_require__(38);
 			renderer.setClearColor(newcol);
 
 			// Create the zip
+			// TODO: Packing and then unpacking data to and from a zip that we
+			// already have as a blob is not the most efficient way of loading
+			// these files
 			let dtfiles = [...e.dataTransfer.files];
-			zipserver
-				.addDataTransfer(e.dataTransfer)
-				.then(zipHandle => {
+			ZipServer
+				._dataTransferToZip(e.dataTransfer)
+				.then(buffer => new JSZip(buffer))
+				.then(zip => {
+
+					manager.setURLModifier(url => {
+
+						url = url.replace(/^[\.\\\/]*/, '');
+
+						const files = zip.file(new RegExp(url));
+						if (files.length) {
+
+							const ab = files.pop().asArrayBuffer();
+							const newurl = URL.createObjectURL( new Blob( [ab] ) );
+
+							requestAnimationFrame(() => URL.revokeObjectURL(newurl));
+
+							return newurl;
+
+						}
+
+						return url;
+					})
 
 					requestAnimationFrame( () => {
 						let promises = dtfiles.map(file => loadModel( file ));
@@ -370,7 +390,8 @@ __webpack_require__(38);
 
 								}
 
-								setTimeout(() => zipHandle.dispose(), 100);
+								manager.setURLModifier(null);
+
 							} );
 					} );
 
