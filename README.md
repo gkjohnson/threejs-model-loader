@@ -1,6 +1,6 @@
 # threejs-model-loader
 
-THREE.js Model Loader for delegating to the appropriate geometry loader and caches the loaded geometry for fast subsequent loads. Uses the file's extension to determine which THREE geometry loader to use.
+THREE.js Model Loader for delegating to the appropriate geometry loader. Uses the file's extension to determine which THREE geometry loader to use.
 
 [Drag and drop example](https://gkjohnson.github.io/threejs-model-loader/example/index.bundle.html)
 
@@ -39,6 +39,14 @@ loader.getLoader = function( loaderName, manager, loadercb ) {
     }
 
 }
+
+loader.load( '.../model.ply', res => {
+
+    // res.model
+    // res.originalResult
+    // res.extension
+    
+} );
 ```
 
 ### Functions
@@ -48,15 +56,22 @@ A function signature that mirrors all the THREE.js geometry loaders. An appriopr
 
 If `extOverride` is set, then that extension is used to select the loader.
 
+`onLoad` is passed an object with values 
+```js
+{
+    model,         // THREE.js Object3D, Group, or Mesh that was loaded
+    extension,     // The extension of the model that was loaded
+    originalResult // The original result that the loader returned
+}
+```
+
 ##### ModelLoader.parse(data, ext, onLoad, onError)
 
 Takes the `data` to parse into geometry and the associated file extension in `ext`.
 
 The model is returned asynchronously in `onLoad` to support async fetching of the loaders.
 
-##### ModelLoader.Clear()
-
-Clears the cached models.
+See `load` for documentation on what the `onLoad` function is passed.
 
 ### Override-able Methods
 ##### ModelLoader.getLoader(loaderName, manager, loadercb)
@@ -72,7 +87,3 @@ List of `extension` to `loaderName`, used to select the loader for each extensio
 loader.loadMap[ 'obj' ] = 'OBJLoader';
 delete loader.loadMap[ 'stl' ];
 ```
-
-##### ModelLoader.modelCache
-
-The list of cached models indexd by the url used to load model. Individual cached models can be cleared by deleting the key.
