@@ -4,6 +4,7 @@
 // Events
 // model-change: Fires when a model is going to load
 // model-loaded: Fires when all the geometry has been fully loaded
+// error: Fires when there's a problem loading the model
 class ModelViewer extends HTMLElement {
 
     static get observedAttributes() {
