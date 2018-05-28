@@ -43,6 +43,22 @@ THREE.ModelLoader.prototype = {
 
 	constructor: THREE.ColladaLoader,
 
+	formResult: function ( res, extension ) {
+
+        const mat = new THREE.MeshBasicMaterial( { color: 0xffffff } );
+        let model = res.scene || res.object || res;
+        model = model.isBufferGeometry || model.isGeometry ? new THREE.Mesh(model, mat) : model;
+
+		return {
+
+			model,
+			extension,
+			originalResult: res
+
+		};
+
+	},
+
 	getLoader: function ( loaderName, manager, loadercb ) {
 
 		loadercb( new THREE[ loaderName ]( manager ) );
@@ -104,7 +120,7 @@ THREE.ModelLoader.prototype = {
 			// TODO: set the cross origin etc information
 			loader.load( url, res => {
 
-				onLoad( res );
+				onLoad( this.formResult( res ) );
 
 			}, onProgress, onError );
 
@@ -118,10 +134,10 @@ THREE.ModelLoader.prototype = {
 
 		this.extToLoader( ext, this.manager, loader => {
 
-			onLoad( loader.parse( data ) );
+			onLoad( this.formResult( loader.parse( data ) ) );
 
 		}, onError );
 
 	}
-	
+
 };

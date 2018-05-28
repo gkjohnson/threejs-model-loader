@@ -218,11 +218,7 @@ class ModelViewer extends HTMLElement {
                 .load(src, res => {
                     if (this._requestId !== requestId) return;
 
-                    const mat = new THREE.MeshBasicMaterial( { color: 0xffffff } );
-                    let obj = res.scene || res.object || res;
-                    obj = obj.isBufferGeometry || obj.isGeometry ? new THREE.Mesh(obj, mat) : obj;
-
-                    this._addModel(obj);
+                    this._addModel(res.model);
 
                     this.dispatchEvent(new CustomEvent('model-loaded', { bubbles: true, cancelable: true, composed: true }));
                 }, null, err => {
