@@ -196,15 +196,15 @@ class ModelViewer extends HTMLElement {
     _loadModel(src) {
 
         if (this._prevsrc === src) return;
+        this._prevsrc = src;
 
         if (this._model) {
             this._model.parent.remove(this._model);
             this._model = null;
             this._dirty = true;
         }
-
-        if (src) {    
-            this._prevsrc = src;
+        
+        if (src) {
 
             this.dispatchEvent(new CustomEvent('model-change', { bubbles: true, cancelable: true, composed: true, detail: src }));
 

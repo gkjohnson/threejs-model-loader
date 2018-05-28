@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8"/>
     <title>THREEjs Model Loader</title>
 
     <script src="../node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js"></script>
@@ -82,129 +83,137 @@
     <model-viewer></model-viewer>
     
     <script>
+        window.addEventListener('WebComponentsReady', () => {
 
-        customElements.define('model-viewer', ModelViewer);
-        const errorel = document.getElementById( 'error' );
-        const viewer = document.querySelector('model-viewer');
-        const bgColors = [
-                '#FFC107',
-                '#F06292',
-                '#009688',
-                '#3F51B5',
-                '#CDDC39'
-            ];
+            customElements.define('model-viewer', ModelViewer);
+            const errorel = document.getElementById( 'error' );
+            const viewer = document.querySelector('model-viewer');
+            const bgColors = [
+                    '#FFC107',
+                    '#F06292',
+                    '#009688',
+                    '#3F51B5',
+                    '#CDDC39'
+                ];
 
-        viewer.addEventListener('error', e => errorel.innerText = e.detail);
-        viewer.addEventListener('model-change', e => errorel.innerText = '');
+            viewer.addEventListener('error', e => {
 
-        // overriding the getLoader function so loaders can be
-        // loaded as-needed
-        viewer.modelLoader.getLoader = function ( loaderName, manager, loadercb ) {
+                errorel.innerText = e.detail;
+                viewer.src = '';
 
-            function createLoader( ln ) {
+            } );
+            viewer.addEventListener('model-change', e => errorel.innerText = '');
 
-                ln = ln || loaderName;
+            // overriding the getLoader function so loaders can be
+            // loaded as-needed
+            viewer.modelLoader.getLoader = function ( loaderName, manager, loadercb ) {
 
-                return new THREE[ ln ]( manager );
+                function createLoader( ln ) {
 
-            }
+                    ln = ln || loaderName;
 
-            function getSource( name ) {
-                
-                let f =
-                    fetch( `../node_modules/three/examples/js/loaders/${ name }.js` )
-                        .then( res => res.text() )
-                f.then( text => eval( text ) );
+                    return new THREE[ ln ]( manager );
 
-                return f;
+                }
 
-            }
+                function getSource( name ) {
+                    
+                    let f =
+                        fetch( `../node_modules/three/examples/js/loaders/${ name }.js` )
+                            .then( res => res.text() )
+                    f.then( text => eval( text ) );
 
-            if ( THREE[ loaderName ] == null ) {
+                    return f;
 
-                if ( loaderName === 'OBJLoader2' ) {
+                }
 
-                    getSource( 'LoaderSupport' )
-                        .then(() => getSource( loaderName ))
-                        .then(() => loadercb( createLoader() ));
+                if ( THREE[ loaderName ] == null ) {
 
-                } else if ( loaderName === 'KMZLoader' ) {
+                    if ( loaderName === 'OBJLoader2' ) {
 
-                    getSource( 'ColladaLoader' )
-                        .then(() => getSource( loaderName ))
-                        .then(() => loadercb( createLoader() ));
+                        getSource( 'LoaderSupport' )
+                            .then(() => getSource( loaderName ))
+                            .then(() => loadercb( createLoader() ));
 
-                } else if ( loaderName === '3MFLoader') {
+                    } else if ( loaderName === 'KMZLoader' ) {
 
-                    getSource( loaderName )
-                        .then(() => loadercb( createLoader( 'ThreeMFLoader' ) ));
+                        getSource( 'ColladaLoader' )
+                            .then(() => getSource( loaderName ))
+                            .then(() => loadercb( createLoader() ));
+
+                    } else if ( loaderName === '3MFLoader') {
+
+                        getSource( loaderName )
+                            .then(() => loadercb( createLoader( 'ThreeMFLoader' ) ));
+
+                    } else {
+
+                        getSource( loaderName )
+                            .then(() => loadercb( createLoader() ));
+                    }
 
                 } else {
 
-                    getSource( loaderName )
-                        .then(() => loadercb( createLoader() ));
+                    loadercb( createLoader() );
+
                 }
 
-            } else {
+            };
+     
+            document.addEventListener( 'dragover', e => e.preventDefault() );
+            document.addEventListener( 'dragenter', e => e.preventDefault() );
+            document.addEventListener( 'drop', e => {
 
-                loadercb( createLoader() );
+                e.preventDefault();
 
-            }
+                const newcol = bgColors.shift();
+                bgColors.push(newcol);
+                viewer.ambientColor = '#' + new THREE.Color(newcol).lerp(new THREE.Color(0xffffff), 0.7).getHexString();
+                viewer.style.backgroundColor = newcol;
 
-        };
- 
-        document.addEventListener( 'dragover', e => e.preventDefault() );
-        document.addEventListener( 'dragenter', e => e.preventDefault() );
-        document.addEventListener( 'drop', e => {
+                // Create the zip
+                // TODO: Packing and then unpacking data to and from a zip that we
+                // already have as a blob is not the most efficient way of loading
+                // these files
+                let filenames = [...e.dataTransfer.files].map(f => f.name);
+                ZipServer
+                    ._dataTransferToZip(e.dataTransfer)
+                    .then(buffer => new JSZip(buffer))
+                    .then(zip => {
 
-            e.preventDefault();
+                        viewer.loadingManager.setURLModifier(url => {
 
-            const newcol = bgColors.shift();
-            bgColors.push(newcol);
-            viewer.ambientColor = '#' + new THREE.Color(newcol).lerp(new THREE.Color(0xffffff), 0.7).getHexString();
-            viewer.style.backgroundColor = newcol;
+                            url = url.replace(/^[\.\\\/]*/, '');
 
-            // Create the zip
-            // TODO: Packing and then unpacking data to and from a zip that we
-            // already have as a blob is not the most efficient way of loading
-            // these files
-            let filenames = [...e.dataTransfer.files].map(f => f.name);
-            ZipServer
-                ._dataTransferToZip(e.dataTransfer)
-                .then(buffer => new JSZip(buffer))
-                .then(zip => {
+                            const files = zip.file(new RegExp(url));
+                            if (files.length) {
 
-                    viewer.loadingManager.setURLModifier(url => {
+                                const ab = files.pop().asArrayBuffer();
+                                const newurl = URL.createObjectURL( new Blob( [ab] ) );
 
-                        url = url.replace(/^[\.\\\/]*/, '');
+                                requestAnimationFrame(() => URL.revokeObjectURL(newurl));
 
-                        const files = zip.file(new RegExp(url));
-                        if (files.length) {
+                                return newurl;
 
-                            const ab = files.pop().asArrayBuffer();
-                            const newurl = URL.createObjectURL( new Blob( [ab] ) );
+                            }
 
-                            requestAnimationFrame(() => URL.revokeObjectURL(newurl));
+                            return url;
+                        });
 
-                            return newurl;
+                        const extregex = new RegExp(
+                            `(${ Object
+                                .keys(viewer.modelLoader.loaderMap)
+                                .join('|')
+                            })$`);
 
-                        }
+                        viewer.src = 
+                            filenames
+                                .filter(n => extregex.test(n))
+                                .pop();
 
-                        return url;
-                    });
+                    } );
 
-                    const extregex = new RegExp(
-                        `(${ Object
-                            .keys(viewer.modelLoader.loaderMap)
-                            .join('|')
-                        })$`);
-
-                    viewer.src = 
-                        filenames
-                            .filter(n => extregex.test(n))
-                            .pop();
-
-                } );
+            } );
 
         } );
 
