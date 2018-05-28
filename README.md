@@ -1,4 +1,4 @@
-# threejs-model-loader
+# threejs-model-loader [![npm version](https://badge.fury.io/js/threejs-model-loader.svg)](https://www.npmjs.com/package/threejs-model-loader)
 
 THREE.js Model Loader for delegating to the appropriate geometry loader. Uses the file's extension to determine which THREE geometry loader to use.
 
