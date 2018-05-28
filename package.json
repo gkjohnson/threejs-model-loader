@@ -1,12 +1,11 @@
 {
   "name": "threejs-model-loader",
   "version": "0.0.1",
-  "description": "Model loader for loading any geometry model format",
+  "description": "THREE.js Model Loader that delegates to the appropriate geometry loader",
   "main": "ModelLoader.js",
   "scripts": {
     "start": "static-server",
-    "build": "cd example && webpack",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "cd example && webpack"
   },
   "repository": {
     "type": "git",
@@ -29,5 +28,15 @@
   },
   "peerDependencies": {
     "three": "^0.91.0"
-  }
+  },
+  "keywords": [
+    "threejs",
+    "three-js",
+    "graphics",
+    "model",
+    "geometry",
+    "loader",
+    "cache",
+    "javascript"
+  ]
 }
