@@ -45,9 +45,9 @@ THREE.ModelLoader.prototype = {
 
 	formResult: function ( res, extension ) {
 
-        const mat = new THREE.MeshBasicMaterial( { color: 0xffffff } );
-        let model = res.scene || res.object || res;
-        model = model.isBufferGeometry || model.isGeometry ? new THREE.Mesh(model, mat) : model;
+		const mat = new THREE.MeshBasicMaterial( { color: 0xffffff } );
+		let model = res.scene || res.object || res;
+		model = model.isBufferGeometry || model.isGeometry ? new THREE.Mesh( model, mat ) : model;
 
 		return {
 
