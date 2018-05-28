@@ -4,7 +4,7 @@ THREE.js Model Loader for delegating to the appropriate geometry loader. Uses th
 
 [Drag and drop example](https://gkjohnson.github.io/threejs-model-loader/example/index.bundle.html)
 
-## Use
+## THREE.ModelLoader
 
 ```js
 var loader = new THREE.ModelLoader();
@@ -87,3 +87,55 @@ List of `extension` to `loaderName`, used to select the loader for each extensio
 loader.loadMap[ 'obj' ] = 'OBJLoader';
 delete loader.loadMap[ 'stl' ];
 ```
+
+## model-viewer Element
+```html
+<!-- Register the Element -->
+<script href=".../model-viewer-element.js" />
+<script>customElements.define('model-viewer', ModelViewer)</script>
+
+<body>
+  <model-viewer src=".../path/to/model.ply" display-shadow ambient-color="red"></model-viewer>
+</body>
+```
+### Attributes
+
+#### src
+
+The url of the model to display.
+
+#### display-shadow
+
+Whether or not the render the shadow under the robot.
+
+#### ambient-color
+
+The color of the ambient light specified with css colors.
+
+#### show-grid
+
+Show a grid underneath the model.
+
+### Events
+
+#### 'model-change'
+
+Fires when a model is going to load.
+
+#### 'model-loaded'
+
+Fires when all the geometry has been fully loaded.
+
+#### 'error'
+
+Fires when there's a problem loading the model.
+
+## Running the Example
+
+Install Node.js and NPM.
+
+Run `npm install`.
+
+Run `npm run server`.
+
+Visit `localhost:9080/example/` to view the page.
