@@ -24,7 +24,8 @@
     "static-server": "^2.2.1",
     "three": "^0.92.0",
     "wc-loader": "^1.1.12",
-    "webpack": "^3.5.3"
+    "webpack": "^3.5.3",
+    "@webcomponents/webcomponentsjs": "^2.0.0"
   },
   "peerDependencies": {
     "three": "^0.91.0"
@@ -36,7 +37,6 @@
     "model",
     "geometry",
     "loader",
-    "cache",
     "javascript"
   ]
 }
