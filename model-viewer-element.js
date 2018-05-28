@@ -256,14 +256,15 @@ class ModelViewer extends HTMLElement {
 
         // add an additional tiny offset so the shadow plane won't
         // z-fight with the bottom of the model
-        plane.position.y = obj.position.y + box.min.y - 1e-3;
+        const offset = Math.abs(box.max.y - box.min.y) * 1e-5;
+        plane.position.y = obj.position.y + box.min.y - offset;
         plane
             .scale
             .set( 1, 1, 1 )
             .multiplyScalar( 100 / s );
 
         gridHelper.position.copy(plane.position);
-        gridHelper.position.y -= 1e-3;
+        gridHelper.position.y -= offset;
 
         // make sure the obj will cast shadows
         obj.traverse(c => {
