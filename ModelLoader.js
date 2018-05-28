@@ -7,8 +7,6 @@ THREE.ModelLoader = function ( manager ) {
 
 	this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;
 
-	this.modelCache = {};
-
 	this.cachedLoaders = {};
 	this.loaderMap = {
 
@@ -44,39 +42,6 @@ THREE.ModelLoader = function ( manager ) {
 THREE.ModelLoader.prototype = {
 
 	constructor: THREE.ColladaLoader,
-
-	toCacheKey: function ( url ) {
-
-		// https://stackoverflow.com/questions/14780350/convert-relative-path-to-absolute-using-javascript
-		this.linkTag = this.linkTag || document.createElement( 'a' );
-		this.linkTag.href = url;
-		return this.linkTag.href;
-
-	},
-
-	cloneResult: function ( argsarr ) {
-
-		return argsarr.map( r => {
-
-			if ( r.isObject3D ) {
-
-				return r.clone();
-			
-			} else if ( 'scene' in r ) {
-
-				// Handle the 'ColladaLoader' case where more than
-				// just the geometry is returned
-				return Object.assign( {}, r, { scene: r.scene.clone() } );
-
-			} else {
-
-				return Object.assign( {}, r );
-
-			}
-
-		} );
-
-	},
 
 	getLoader: function ( loaderName, manager, loadercb ) {
 
@@ -121,17 +86,6 @@ THREE.ModelLoader.prototype = {
 
 		onError = onError || ( e => console.error( e ) );
 
-		// Grab the processed data from the cache if it's been
-		// loaded already
-		var cachekey = this.toCacheKey( url );
-		if ( this.modelCache[ cachekey ] != null ) {
-
-			var args = this.modelCache[ cachekey ];
-			requestAnimationFrame( () => onLoad( ...this.cloneResult( args ) ) );
-			return;
-
-		}
-
 		// Get the extension associated the file so we can get the
 		// appropriate loader
 		var extMatches = url.match( /\.([^\.\/\\]+)$/ );
@@ -148,10 +102,9 @@ THREE.ModelLoader.prototype = {
 		this.extToLoader( ext, this.manager, loader => {
 
 			// TODO: set the cross origin etc information
-			loader.load( url, ( ...args ) => {
+			loader.load( url, res => {
 
-				this.modelCache[ cachekey ] = this.cloneResult( args );
-				onLoad( ...args );
+				onLoad( res );
 
 			}, onProgress, onError );
 
@@ -169,13 +122,6 @@ THREE.ModelLoader.prototype = {
 
 		}, onError );
 
-	},
-
-	// Clear the model cache
-	clearCache: function () {
-
-		this.modelCache = {};
-
 	}
-
+	
 };
