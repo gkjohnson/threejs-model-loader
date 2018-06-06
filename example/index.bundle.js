@@ -100,7 +100,7 @@ module.exports = function(src) {
 /* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/*__wc__loader*/!function(a){var b="\n    <meta charset=\"utf-8\">\n    <title>THREEjs Model Loader</title>\n\n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n\n    \n    \n\n    <style>*{margin:0;padding:0;overflow:hidden;}html,body{box-sizing:border-box;width:100%;height:100%;}#container{position:absolute;width:100%;}#container > *{padding:5px;}#error{background:#E91E63;}#error:empty{padding:0;}div{color:white;text-align:center;pointer-events:none;font-family:Monospace;font-size:13px;}model-viewer{width:100%;height:100%;background:#FFC107;}</style>\n";if(a.head){var c=a.head,d=a.createElement("div");for(d.innerHTML=b;d.children.length>0;)c.appendChild(d.children[0])}else a.write(b)}(document);!function(a){var b="\n    <div id=\"container\">\n        <div id=\"error\"></div>\n        <div>Drag geometry files and depencies to load and view them <br>\n        ( Dragging folders will only work in chrome )</div>\n    </div>\n\n    <model-viewer></model-viewer>\n    \n    \n\n";if(a.body){var c=a.body,d=a.createElement("div");for(d.innerHTML=b;d.children.length>0;)c.appendChild(d.children[0])}else a.write(b)}(document);
+/*__wc__loader*/!function(a){var b="\n    <meta charset=\"utf-8\">\n    <title>THREEjs Model Loader</title>\n\n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n\n    \n    \n\n    <style>*{margin:0;padding:0;overflow:hidden;}html,body{box-sizing:border-box;width:100%;height:100%;}#container{position:absolute;width:100%;}#container > *{padding:5px;}#error{background:#E91E63;}#error:empty{padding:0;}div{color:white;text-align:center;pointer-events:none;font-family:Monospace;font-size:13px;}model-viewer{width:100%;height:100%;background:#FFC107;}</style>\n";if(a.head){var c=a.head,d=a.createElement("div");for(d.innerHTML=b;d.children.length>0;)c.appendChild(d.children[0])}else a.write(b)}(document);!function(a){var b="\n    <div id=\"container\">\n        <div id=\"error\"></div>\n        <div>Drag geometry files and depencies to load and view them <br>\n        ( Dragging folders will only work in chrome )</div>\n    </div>\n\n    <model-viewer></model-viewer>\n\n    \n\n\n";if(a.body){var c=a.body,d=a.createElement("div");for(d.innerHTML=b;d.children.length>0;)c.appendChild(d.children[0])}else a.write(b)}(document);
 __webpack_require__(2);
 
 __webpack_require__(4);
@@ -151,7 +151,7 @@ __webpack_require__(40);
 
                 throw new Error('Data must be of type "DataTransfer"', dataTransfer);
 
-            }        
+            }
 
             const files = {};
 
@@ -159,7 +159,7 @@ __webpack_require__(40);
             // the paths to files names to store in the `files`
             // object
             function recurseDirectory(item) {
-                    
+
                 if (item.isFile) {
 
                     return new Promise(resolve => {
@@ -208,7 +208,7 @@ __webpack_require__(40);
                     Promise.all(promises).then(() => resolve(files));
 
                 } else {
-                    
+
                     // add a '/' prefix to math the file directory entry
                     // on webkit browsers
                     dtfiles
@@ -216,7 +216,7 @@ __webpack_require__(40);
                         .forEach(f => files['/' + f.name] = f);
 
                     resolve(files);
-                
+
                 }
             });
 
@@ -256,7 +256,7 @@ __webpack_require__(40);
                 }
 
                 function getSource( name ) {
-                    
+
                     let f =
                         fetch( `../node_modules/three/examples/js/loaders/${ name }.js` )
                             .then( res => res.text() )
@@ -323,7 +323,7 @@ __webpack_require__(40);
                             url = '/' + url.replace(/^[\.\\\/]*/, '');
                             if (url in files) {
                                 const newurl = URL.createObjectURL(files[url]);
-                                
+
                                 // revoke the url after it's been used
                                 requestAnimationFrame(() => URL.revokeObjectURL(newurl));
 
@@ -339,7 +339,7 @@ __webpack_require__(40);
                             `(${ Object
                                 .keys(viewer.modelLoader.loaderMap)
                                 .join('|')
-                            })$`);
+                            })$`, 'i');
 
                         viewer.src = 
                             filesNames
