@@ -79,7 +79,7 @@
     </div>
 
     <model-viewer></model-viewer>
-    
+
     <script>
 
         // Converts a datatransfer structer into an object with all paths and files
@@ -90,7 +90,7 @@
 
                 throw new Error('Data must be of type "DataTransfer"', dataTransfer);
 
-            }        
+            }
 
             const files = {};
 
@@ -98,7 +98,7 @@
             // the paths to files names to store in the `files`
             // object
             function recurseDirectory(item) {
-                    
+
                 if (item.isFile) {
 
                     return new Promise(resolve => {
@@ -147,7 +147,7 @@
                     Promise.all(promises).then(() => resolve(files));
 
                 } else {
-                    
+
                     // add a '/' prefix to math the file directory entry
                     // on webkit browsers
                     dtfiles
@@ -155,7 +155,7 @@
                         .forEach(f => files['/' + f.name] = f);
 
                     resolve(files);
-                
+
                 }
             });
 
@@ -195,7 +195,7 @@
                 }
 
                 function getSource( name ) {
-                    
+
                     let f =
                         fetch( `../node_modules/three/examples/js/loaders/${ name }.js` )
                             .then( res => res.text() )
@@ -262,7 +262,7 @@
                             url = '/' + url.replace(/^[\.\\\/]*/, '');
                             if (url in files) {
                                 const newurl = URL.createObjectURL(files[url]);
-                                
+
                                 // revoke the url after it's been used
                                 requestAnimationFrame(() => URL.revokeObjectURL(newurl));
 
@@ -278,7 +278,7 @@
                             `(${ Object
                                 .keys(viewer.modelLoader.loaderMap)
                                 .join('|')
-                            })$`);
+                            })$`, 'i');
 
                         viewer.src = 
                             filesNames
