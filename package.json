@@ -18,13 +18,14 @@
   },
   "homepage": "https://github.com/gkjohnson/threejs-model-loader#readme",
   "devDependencies": {
+    "@webcomponents/webcomponentsjs": "^2.0.0",
     "collada-archive-loader": "^0.1.1",
+    "eslint-config-mdcs": "^4.2.3",
     "script-loader": "^0.7.2",
     "static-server": "^2.2.1",
     "three": "^0.92.0",
     "wc-loader": "^1.1.12",
-    "webpack": "^3.5.3",
-    "@webcomponents/webcomponentsjs": "^2.0.0"
+    "webpack": "^3.5.3"
   },
   "peerDependencies": {
     "three": "^0.91.0"

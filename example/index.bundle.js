@@ -141,218 +141,7 @@ __webpack_require__(38);
 
 __webpack_require__(40);
 
-
-
-        // Converts a datatransfer structer into an object with all paths and files
-        // listed out. Returns a promise that resolves with the file structure.
-        function dataTransferToFiles(dataTransfer) {
-
-            if (!(dataTransfer instanceof DataTransfer)) {
-
-                throw new Error('Data must be of type "DataTransfer"', dataTransfer);
-
-            }
-
-            const files = {};
-
-            // recurse down the webkit file structure resolving
-            // the paths to files names to store in the `files`
-            // object
-            function recurseDirectory(item) {
-
-                if (item.isFile) {
-
-                    return new Promise(resolve => {
-                        item.file(file => {
-                            files[item.fullPath] = file;
-                            resolve();
-                        });
-                    });
-
-                } else {
-
-                    const reader = item.createReader();
-
-                    return new Promise(resolve => {
-
-                        const promises = [];
-                        reader.readEntries(et => {
-                            et.forEach(e => {
-                                promises.push(recurseDirectory(e));
-                            });
-
-                            Promise.all(promises).then(() => resolve())
-                        });
-                    });
-
-                    return Promise.all(promises);
-                }
-            }
-
-            return new Promise(resolve => {
-
-                // Traverse down the tree and add the files into the zip
-                const dtitems = dataTransfer.items && [...dataTransfer.items];
-                const dtfiles = [...dataTransfer.files];
-
-                if (dtitems && dtitems.length && dtitems[0].webkitGetAsEntry) {
-
-                    const promises = [];
-                    for (let i = 0; i < dtitems.length; i ++) {
-                        const item = dtitems[i];
-                        const entry = item.webkitGetAsEntry();
-
-                        promises.push(recurseDirectory(entry));
-
-                    }
-                    Promise.all(promises).then(() => resolve(files));
-
-                } else {
-
-                    // add a '/' prefix to math the file directory entry
-                    // on webkit browsers
-                    dtfiles
-                        .filter(f => f.size !== 0)
-                        .forEach(f => files['/' + f.name] = f);
-
-                    resolve(files);
-
-                }
-            });
-
-        }
-
-        window.addEventListener('WebComponentsReady', () => {
-
-            customElements.define('model-viewer', ModelViewer);
-            const errorel = document.getElementById( 'error' );
-            const viewer = document.querySelector('model-viewer');
-            const bgColors = [
-                    '#FFC107',
-                    '#F06292',
-                    '#009688',
-                    '#3F51B5',
-                    '#CDDC39'
-                ];
-
-            viewer.addEventListener('error', e => {
-
-                errorel.innerText = e.detail;
-                viewer.src = '';
-
-            } );
-            viewer.addEventListener('model-change', e => errorel.innerText = '');
-
-            // overriding the getLoader function so loaders can be
-            // loaded as-needed
-            viewer.modelLoader.getLoader = function ( loaderName, manager, loadercb ) {
-
-                function createLoader( ln ) {
-
-                    ln = ln || loaderName;
-
-                    return new THREE[ ln ]( manager );
-
-                }
-
-                function getSource( name ) {
-
-                    let f =
-                        fetch( `../node_modules/three/examples/js/loaders/${ name }.js` )
-                            .then( res => res.text() )
-                    f.then( text => eval( text ) );
-
-                    return f;
-
-                }
-
-                if ( THREE[ loaderName ] == null ) {
-
-                    if ( loaderName === 'OBJLoader2' ) {
-
-                        getSource( 'LoaderSupport' )
-                            .then(() => getSource( loaderName ))
-                            .then(() => loadercb( createLoader() ));
-
-                    } else if ( loaderName === 'KMZLoader' ) {
-
-                        getSource( 'ColladaLoader' )
-                            .then(() => getSource( loaderName ))
-                            .then(() => loadercb( createLoader() ));
-
-                    } else if ( loaderName === '3MFLoader') {
-
-                        getSource( loaderName )
-                            .then(() => loadercb( createLoader( 'ThreeMFLoader' ) ));
-
-                    } else {
-
-                        getSource( loaderName )
-                            .then(() => loadercb( createLoader() ));
-                    }
-
-                } else {
-
-                    loadercb( createLoader() );
-
-                }
-
-            };
-     
-            document.addEventListener('dragover', e => e.preventDefault());
-            document.addEventListener('dragenter', e => e.preventDefault());
-            document.addEventListener('drop', e => {
-
-                e.preventDefault();
-
-                const newcol = bgColors.shift();
-                bgColors.push(newcol);
-                viewer.ambientColor = '#' + new THREE.Color(newcol).lerp(new THREE.Color(0xffffff), 0.7).getHexString();
-                viewer.style.backgroundColor = newcol;
-
-                // convert the files
-                dataTransferToFiles(e.dataTransfer)
-                    .then(files => {
-
-                        // set the loader url modifier to check the list
-                        // of files
-                        viewer.loadingManager.setURLModifier(url => {
-
-                            // TODO: This won't work for paths that traverse up
-                            // and down (/example/../path/model.ply)
-                            url = '/' + url.replace(/^[\.\\\/]*/, '');
-                            if (url in files) {
-                                const newurl = URL.createObjectURL(files[url]);
-
-                                // revoke the url after it's been used
-                                requestAnimationFrame(() => URL.revokeObjectURL(newurl));
-
-                                return newurl;
-                            }
-
-                            return url;
-                        });
-
-                        // set the source of the element to the most likely intended display model
-                        const filesNames = Object.keys(files);
-                        const extregex = new RegExp(
-                            `(${ Object
-                                .keys(viewer.modelLoader.loaderMap)
-                                .join('|')
-                            })$`, 'i');
-
-                        viewer.src = 
-                            filesNames
-                                .filter(n => extregex.test(n))
-                                .shift();
-
-                    });
-
-            });
-
-        });
-
-    
+__webpack_require__(42);
 
 
 /***/ }),
@@ -581,7 +370,7 @@ __webpack_require__(0)(__webpack_require__(39))
 /* 39 */
 /***/ (function(module, exports) {
 
-module.exports = "// model-viewer element\r\n// Loads and displays a 3D model\r\n\r\n// Events\r\n// model-change: Fires when a model is going to load\r\n// model-loaded: Fires when all the geometry has been fully loaded\r\n// error: Fires when there's a problem loading the model\r\nclass ModelViewer extends HTMLElement {\r\n\r\n    static get observedAttributes() {\r\n        return ['src', 'display-shadow', 'ambient-color', 'show-grid'];\r\n    }\r\n\r\n    get loadingManager() {\r\n        return this._loadingManager = this._loadingManager || new THREE.LoadingManager();\r\n    }\r\n\r\n    get modelLoader() {\r\n        return this._modelLoader = this._modelLoader || new THREE.ModelLoader(this.loadingManager);\r\n    }\r\n\r\n    get src() { return this.getAttribute('src') || ''; }\r\n    set src(val) { this.setAttribute('src', val); }\r\n\r\n    get displayShadow() { return this.hasAttribute('display-shadow') || false; }\r\n    set displayShadow(val) {\r\n        val = !!val;\r\n        val ? this.setAttribute('display-shadow', '') : this.removeAttribute('display-shadow');\r\n    }\r\n\r\n    get ambientColor() { return this.getAttribute('ambient-color') || '#455A64'; }\r\n    set ambientColor(val) {\r\n        val ? this.setAttribute('ambient-color', val) : this.removeAttribute('ambient-color');\r\n    }\r\n\r\n    get showGrid() { return this.hasAttribute('show-grid') || false; }\r\n    set showGrid(val) {\r\n        val ? this.setAttribute('show-grid', true) : this.removeAttribute('show-grid');\r\n    }\r\n\r\n    /* Lifecycle Functions */\r\n    constructor() {\r\n        super()\r\n\r\n        // Scene setup\r\n        const scene = new THREE.Scene();\r\n        const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);\r\n        camera.position.z = 10;\r\n\r\n        const ambientLight = new THREE.AmbientLight(this.ambientColor);\r\n        scene.add(ambientLight);\r\n\r\n        // Light setup\r\n        const dirLight = new THREE.DirectionalLight(0xffffff);\r\n        dirLight.position.set(0, 10, 0);\r\n        dirLight.shadow.mapSize.width = 2048;\r\n        dirLight.shadow.mapSize.height = 2048;\r\n        dirLight.castShadow = true;\r\n        \r\n        scene.add(dirLight);\r\n\r\n        // Containers setup\r\n        const scaleContainer = new THREE.Object3D();\r\n        scene.add(scaleContainer);\r\n\r\n        const rotator = new THREE.Object3D();\r\n        scaleContainer.add( rotator );\r\n\r\n        const plane = new THREE.Mesh(\r\n            new THREE.PlaneGeometry(),\r\n            new THREE.ShadowMaterial({ side: THREE.DoubleSide, transparent: true, opacity: 0.25 })\r\n        );\r\n        plane.rotation.set(-Math.PI / 2, 0, 0);\r\n        plane.scale.multiplyScalar(20);\r\n        plane.receiveShadow = true;\r\n        scaleContainer.add(plane);\r\n\r\n        const gridHelper = new THREE.GridHelper(10, 10, 0xffffff, 0xeeeeee);\r\n        gridHelper.material.transparent = true;\r\n        gridHelper.material.opacity = 0.6;\r\n        gridHelper.visible = false;\r\n        scaleContainer.add(gridHelper);\r\n\r\n        // Renderer setup\r\n        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });\r\n        renderer.setClearColor(0xffffff);\r\n        renderer.setClearAlpha(0);\r\n        renderer.shadowMap.enabled = true;\r\n\r\n        // Controls setup\r\n        const controls = new THREE.OrbitControls(camera, renderer.domElement);\r\n        controls.rotateSpeed = 2.0;\r\n        controls.zoomSpeed = 5;\r\n        controls.panSpeed = 2;\r\n        controls.enableZoom = true;\r\n        controls.enablePan = true;\r\n        controls.enableDamping = false;\r\n        controls.maxDistance = 50;\r\n        controls.minDistance = 0.25;\r\n        controls.addEventListener('change', () => this._dirty = true);\r\n        \r\n        this.rotator = rotator;\r\n        this.scaleContainer = scaleContainer;\r\n        this.renderer = renderer;\r\n        this.camera = camera;\r\n        this.controls = controls;\r\n        this.plane = plane;\r\n        this.gridHelper = gridHelper;\r\n        this.ambientLight = ambientLight;\r\n        this._model = null;\r\n        this._requestId = 0;\r\n\r\n        const _do = () => {\r\n            if(this.parentNode) {\r\n                this.refresh();\r\n                this.controls.update();\r\n                if (this._dirty) {\r\n                    this.renderer.render(scene, camera);\r\n                    this._dirty = false;\r\n                }\r\n            }\r\n            this._renderLoopId = requestAnimationFrame(_do);\r\n        }\r\n        _do();\r\n    }\r\n\r\n    connectedCallback() {\r\n        // Add our initialize styles for the element if they haven't\r\n        // been added yet\r\n        if (!this.constructor._styletag) {\r\n            const styletag = document.createElement('style');\r\n            styletag.innerHTML =\r\n            `\r\n                ${this.tagName} { display: block; }\r\n                ${this.tagName} canvas {\r\n                    width: 100%;\r\n                    height: 100%;\r\n                }\r\n            `;\r\n            document.head.appendChild(styletag);\r\n            this.constructor._styletag = styletag;\r\n        }\r\n\r\n        // add the renderer\r\n        if (this.childElementCount === 0) {\r\n            this.appendChild(this.renderer.domElement);\r\n        }\r\n\r\n        this.refresh();\r\n        requestAnimationFrame(() => this.refresh());\r\n    }\r\n\r\n    disconnectedCallback() {\r\n        cancelAnimationFrame(this._renderLoopId);\r\n    }\r\n\r\n    attributeChangedCallback(attr, oldval, newval) {\r\n        this._dirty = true;\r\n\r\n        switch(attr) {\r\n            case 'src': {\r\n                this._loadModel(this.src);\r\n                break;\r\n            }\r\n\r\n            case 'ambient-color': {\r\n                this.ambientLight.color.set(this.ambientColor);\r\n                break;\r\n            }\r\n\r\n            case 'show-grid': {\r\n                this.gridHelper.visible = this.showGrid;\r\n                break;\r\n            }\r\n        }\r\n    }\r\n\r\n    /* Public API */\r\n    refresh() {\r\n        const r = this.renderer;\r\n        const w = this.clientWidth;\r\n        const h = this.clientHeight;\r\n        const currsize = r.getSize();\r\n\r\n        if (currsize.width != w || currsize.height != h) {\r\n            this._dirty = true;\r\n\r\n            r.setPixelRatio(window.devicePixelRatio);\r\n            r.setSize(w, h, false);\r\n\r\n            this.camera.aspect = w / h;\r\n            this.camera.updateProjectionMatrix();\r\n        }\r\n    }\r\n\r\n    /* Private Functions */ \r\n    _loadModel(src) {\r\n\r\n        if (this._prevsrc === src) return;\r\n        this._prevsrc = src;\r\n\r\n        if (this._model) {\r\n            this._model.parent.remove(this._model);\r\n            this._model = null;\r\n            this._dirty = true;\r\n        }\r\n        \r\n        if (src) {\r\n\r\n            this.dispatchEvent(new CustomEvent('model-change', { bubbles: true, cancelable: true, composed: true, detail: src }));\r\n\r\n            // Keep track of this request and make\r\n            // sure it doesn't get overwritten by\r\n            // a subsequent one\r\n            this._requestId ++;\r\n            const requestId = this._requestId;\r\n\r\n            this.modelLoader\r\n                .load(src, res => {\r\n                    if (this._requestId !== requestId) return;\r\n\r\n                    this._addModel(res.model);\r\n\r\n                    this.dispatchEvent(new CustomEvent('model-loaded', { bubbles: true, cancelable: true, composed: true }));\r\n                }, null, err => {\r\n                    this.dispatchEvent(new CustomEvent('error', { bubbles: true, cancelable: true, composed: true, detail: err }));\r\n                });\r\n\r\n        }\r\n    }\r\n\r\n    _addModel(obj) {\r\n        const rotator = this.rotator;\r\n        const scaleContainer = this.scaleContainer;\r\n        const plane = this.plane;\r\n        const gridHelper = this.gridHelper;\r\n\r\n        this._model = obj;\r\n\r\n        // Get the bounds of the model and scale and set appropriately\r\n        obj.updateMatrixWorld( true );\r\n        const box = new THREE.Box3().expandByObject( obj );\r\n        const sphere = box.getBoundingSphere( new THREE.Sphere() );\r\n        const s = 3 / sphere.radius;\r\n\r\n        rotator.add( obj );\r\n        rotator.rotation.set( 0, 0, 0 );\r\n        obj.position\r\n            .copy( sphere.center )\r\n            .negate();\r\n\r\n        scaleContainer.scale.set( 1, 1, 1 ).multiplyScalar( s );\r\n\r\n        // add an additional tiny offset so the shadow plane won't\r\n        // z-fight with the bottom of the model\r\n        const offset = Math.abs(box.max.y - box.min.y) * 1e-5;\r\n        plane.position.y = obj.position.y + box.min.y - offset;\r\n        plane\r\n            .scale\r\n            .set( 1, 1, 1 )\r\n            .multiplyScalar( 100 / s );\r\n\r\n        gridHelper.position.copy(plane.position);\r\n        gridHelper.position.y -= offset;\r\n\r\n        // make sure the obj will cast shadows\r\n        obj.traverse(c => {\r\n\r\n            if ( 'castShadow' in c ) c.castShadow = true;\r\n\r\n            if ( c instanceof THREE.Mesh ) {\r\n\r\n                if ( c.material instanceof THREE.MeshBasicMaterial ) {\r\n\r\n                    const mat = new THREE.MeshPhongMaterial({ color: 0x888888 });\r\n                    if ( c.geometry instanceof THREE.BufferGeometry && 'color' in c.geometry.attributes\r\n                        || c.geometry instanceof THREE.Geometry ) {\r\n\r\n                        mat.vertexColors = THREE.VertexColors;\r\n\r\n                    }\r\n\r\n                    if ( c.geometry instanceof THREE.BufferGeometry && !( 'normal' in c.geometry.attributes )) {\r\n\r\n                        c.geometry.computeVertexNormals();\r\n\r\n                    }\r\n\r\n                    c.material = mat;\r\n\r\n                }\r\n\r\n            }\r\n\r\n        });\r\n\r\n        this._dirty = true;\r\n\r\n    }\r\n}\r\n\r\nwindow.ModelViewer = ModelViewer"
+module.exports = "// model-viewer element\n// Loads and displays a 3D model\n\n// Events\n// model-change: Fires when a model is going to load\n// model-loaded: Fires when all the geometry has been fully loaded\n// error: Fires when there's a problem loading the model\nclass ModelViewer extends HTMLElement {\n\n\tstatic get observedAttributes() {\n\n\t\treturn [ 'src', 'display-shadow', 'ambient-color', 'show-grid' ];\n\n\t}\n\n\tget loadingManager() {\n\n\t\treturn this._loadingManager = this._loadingManager || new THREE.LoadingManager();\n\n\t}\n\n\tget modelLoader() {\n\n\t\treturn this._modelLoader = this._modelLoader || new THREE.ModelLoader( this.loadingManager );\n\n\t}\n\n\tget src() {\n\n\t\treturn this.getAttribute( 'src' ) || '';\n\n\t}\n\tset src( val ) {\n\n\t\tthis.setAttribute( 'src', val );\n\n\t}\n\n\tget displayShadow() {\n\n\t\treturn this.hasAttribute( 'display-shadow' ) || false;\n\n\t}\n\tset displayShadow( val ) {\n\n\t\tval = !! val;\n\t\tval ? this.setAttribute( 'display-shadow', '' ) : this.removeAttribute( 'display-shadow' );\n\n\t}\n\n\tget ambientColor() {\n\n\t\treturn this.getAttribute( 'ambient-color' ) || '#455A64';\n\n\t}\n\tset ambientColor( val ) {\n\n\t\tval ? this.setAttribute( 'ambient-color', val ) : this.removeAttribute( 'ambient-color' );\n\n\t}\n\n\tget showGrid() {\n\n\t\treturn this.hasAttribute( 'show-grid' ) || false;\n\n\t}\n\tset showGrid( val ) {\n\n\t\tval ? this.setAttribute( 'show-grid', true ) : this.removeAttribute( 'show-grid' );\n\n\t}\n\n\t/* Lifecycle Functions */\n\tconstructor() {\n\n\t\tsuper();\n\n\t\t// Scene setup\n\t\tconst scene = new THREE.Scene();\n\t\tconst camera = new THREE.PerspectiveCamera( 75, 1, 0.1, 1000 );\n\t\tcamera.position.z = 10;\n\n\t\tconst ambientLight = new THREE.AmbientLight( this.ambientColor );\n\t\tscene.add( ambientLight );\n\n\t\t// Light setup\n\t\tconst dirLight = new THREE.DirectionalLight( 0xffffff );\n\t\tdirLight.position.set( 0, 10, 0 );\n\t\tdirLight.shadow.mapSize.width = 2048;\n\t\tdirLight.shadow.mapSize.height = 2048;\n\t\tdirLight.castShadow = true;\n\n\t\tscene.add( dirLight );\n\n\t\t// Containers setup\n\t\tconst scaleContainer = new THREE.Object3D();\n\t\tscene.add( scaleContainer );\n\n\t\tconst rotator = new THREE.Object3D();\n\t\tscaleContainer.add( rotator );\n\n\t\tconst plane = new THREE.Mesh(\n\t\t\tnew THREE.PlaneGeometry(),\n\t\t\tnew THREE.ShadowMaterial( { side: THREE.DoubleSide, transparent: true, opacity: 0.25 } )\n\t\t);\n\t\tplane.rotation.set( - Math.PI / 2, 0, 0 );\n\t\tplane.scale.multiplyScalar( 20 );\n\t\tplane.receiveShadow = true;\n\t\tscaleContainer.add( plane );\n\n\t\tconst gridHelper = new THREE.GridHelper( 10, 10, 0xffffff, 0xeeeeee );\n\t\tgridHelper.material.transparent = true;\n\t\tgridHelper.material.opacity = 0.6;\n\t\tgridHelper.visible = false;\n\t\tscaleContainer.add( gridHelper );\n\n\t\t// Renderer setup\n\t\tconst renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } );\n\t\trenderer.setClearColor( 0xffffff );\n\t\trenderer.setClearAlpha( 0 );\n\t\trenderer.shadowMap.enabled = true;\n\n\t\t// Controls setup\n\t\tconst controls = new THREE.OrbitControls( camera, renderer.domElement );\n\t\tcontrols.rotateSpeed = 2.0;\n\t\tcontrols.zoomSpeed = 5;\n\t\tcontrols.panSpeed = 2;\n\t\tcontrols.enableZoom = true;\n\t\tcontrols.enablePan = true;\n\t\tcontrols.enableDamping = false;\n\t\tcontrols.maxDistance = 50;\n\t\tcontrols.minDistance = 0.25;\n\t\tcontrols.addEventListener( 'change', () => this._dirty = true );\n\n\t\tthis.rotator = rotator;\n\t\tthis.scaleContainer = scaleContainer;\n\t\tthis.renderer = renderer;\n\t\tthis.camera = camera;\n\t\tthis.controls = controls;\n\t\tthis.plane = plane;\n\t\tthis.gridHelper = gridHelper;\n\t\tthis.ambientLight = ambientLight;\n\t\tthis._model = null;\n\t\tthis._requestId = 0;\n\n\t\tconst _do = () => {\n\n\t\t\tif ( this.parentNode ) {\n\n\t\t\t\tthis.refresh();\n\t\t\t\tthis.controls.update();\n\t\t\t\tif ( this._dirty ) {\n\n\t\t\t\t\tthis.renderer.render( scene, camera );\n\t\t\t\t\tthis._dirty = false;\n\n\t\t\t\t}\n\n\t\t\t}\n\t\t\tthis._renderLoopId = requestAnimationFrame( _do );\n\n\t\t};\n\t\t_do();\n\n\t}\n\n\tconnectedCallback() {\n\n\t\t// Add our initialize styles for the element if they haven't\n\t\t// been added yet\n\t\tif ( ! this.constructor._styletag ) {\n\n\t\t\tconst styletag = document.createElement( 'style' );\n\t\t\tstyletag.innerHTML =\n            `\n                ${this.tagName} { display: block; }\n                ${this.tagName} canvas {\n                    width: 100%;\n                    height: 100%;\n                }\n            `;\n\t\t\tdocument.head.appendChild( styletag );\n\t\t\tthis.constructor._styletag = styletag;\n\n\t\t}\n\n\t\t// add the renderer\n\t\tif ( this.childElementCount === 0 ) {\n\n\t\t\tthis.appendChild( this.renderer.domElement );\n\n\t\t}\n\n\t\tthis.refresh();\n\t\trequestAnimationFrame( () => this.refresh() );\n\n\t}\n\n\tdisconnectedCallback() {\n\n\t\tcancelAnimationFrame( this._renderLoopId );\n\n\t}\n\n\tattributeChangedCallback( attr, oldval, newval ) {\n\n\t\tthis._dirty = true;\n\n\t\tswitch ( attr ) {\n\n\t\t\tcase 'src': {\n\n\t\t\t\tthis._loadModel( this.src );\n\t\t\t\tbreak;\n\n\t\t\t}\n\n\t\t\tcase 'ambient-color': {\n\n\t\t\t\tthis.ambientLight.color.set( this.ambientColor );\n\t\t\t\tbreak;\n\n\t\t\t}\n\n\t\t\tcase 'show-grid': {\n\n\t\t\t\tthis.gridHelper.visible = this.showGrid;\n\t\t\t\tbreak;\n\n\t\t\t}\n\n\t\t}\n\n\t}\n\n\t/* Public API */\n\trefresh() {\n\n\t\tconst r = this.renderer;\n\t\tconst w = this.clientWidth;\n\t\tconst h = this.clientHeight;\n\t\tconst currsize = r.getSize();\n\n\t\tif ( currsize.width != w || currsize.height != h ) {\n\n\t\t\tthis._dirty = true;\n\n\t\t\tr.setPixelRatio( window.devicePixelRatio );\n\t\t\tr.setSize( w, h, false );\n\n\t\t\tthis.camera.aspect = w / h;\n\t\t\tthis.camera.updateProjectionMatrix();\n\n\t\t}\n\n\t}\n\n\t/* Private Functions */\n\t_loadModel( src ) {\n\n\t\tif ( this._prevsrc === src ) return;\n\t\tthis._prevsrc = src;\n\n\t\tif ( this._model ) {\n\n\t\t\tthis._model.parent.remove( this._model );\n\t\t\tthis._model = null;\n\t\t\tthis._dirty = true;\n\n\t\t}\n\n\t\tif ( src ) {\n\n\t\t\tthis.dispatchEvent( new CustomEvent( 'model-change', { bubbles: true, cancelable: true, composed: true, detail: src } ) );\n\n\t\t\t// Keep track of this request and make\n\t\t\t// sure it doesn't get overwritten by\n\t\t\t// a subsequent one\n\t\t\tthis._requestId ++;\n\t\t\tconst requestId = this._requestId;\n\n\t\t\tthis.modelLoader\n\t\t\t\t.load( src, res => {\n\n\t\t\t\t\tif ( this._requestId !== requestId ) return;\n\n\t\t\t\t\tthis._addModel( res.model );\n\n\t\t\t\t\tthis.dispatchEvent( new CustomEvent( 'model-loaded', { bubbles: true, cancelable: true, composed: true } ) );\n\n\t\t\t\t}, null, err => {\n\n\t\t\t\t\tthis.dispatchEvent( new CustomEvent( 'error', { bubbles: true, cancelable: true, composed: true, detail: err } ) );\n\n\t\t\t\t} );\n\n\t\t}\n\n\t}\n\n\t_addModel( obj ) {\n\n\t\tconst rotator = this.rotator;\n\t\tconst scaleContainer = this.scaleContainer;\n\t\tconst plane = this.plane;\n\t\tconst gridHelper = this.gridHelper;\n\n\t\tthis._model = obj;\n\n\t\t// Get the bounds of the model and scale and set appropriately\n\t\tobj.updateMatrixWorld( true );\n\t\tconst box = new THREE.Box3().expandByObject( obj );\n\t\tconst sphere = box.getBoundingSphere( new THREE.Sphere() );\n\t\tconst s = 3 / sphere.radius;\n\n\t\trotator.add( obj );\n\t\trotator.rotation.set( 0, 0, 0 );\n\t\tobj.position\n\t\t\t.copy( sphere.center )\n\t\t\t.negate();\n\n\t\tscaleContainer.scale.set( 1, 1, 1 ).multiplyScalar( s );\n\n\t\t// add an additional tiny offset so the shadow plane won't\n\t\t// z-fight with the bottom of the model\n\t\tconst offset = Math.abs( box.max.y - box.min.y ) * 1e-5;\n\t\tplane.position.y = obj.position.y + box.min.y - offset;\n\t\tplane\n\t\t\t.scale\n\t\t\t.set( 1, 1, 1 )\n\t\t\t.multiplyScalar( 100 / s );\n\n\t\tgridHelper.position.copy( plane.position );\n\t\tgridHelper.position.y -= offset;\n\n\t\t// make sure the obj will cast shadows\n\t\tobj.traverse( c => {\n\n\t\t\tif ( 'castShadow' in c ) c.castShadow = true;\n\n\t\t\tif ( c instanceof THREE.Mesh ) {\n\n\t\t\t\tif ( c.material instanceof THREE.MeshBasicMaterial ) {\n\n\t\t\t\t\tconst mat = new THREE.MeshPhongMaterial( { color: 0x888888 } );\n\t\t\t\t\tif ( c.geometry instanceof THREE.BufferGeometry && 'color' in c.geometry.attributes\n                        || c.geometry instanceof THREE.Geometry ) {\n\n\t\t\t\t\t\tmat.vertexColors = THREE.VertexColors;\n\n\t\t\t\t\t}\n\n\t\t\t\t\tif ( c.geometry instanceof THREE.BufferGeometry && ! ( 'normal' in c.geometry.attributes ) ) {\n\n\t\t\t\t\t\tc.geometry.computeVertexNormals();\n\n\t\t\t\t\t}\n\n\t\t\t\t\tc.material = mat;\n\n\t\t\t\t}\n\n\t\t\t}\n\n\t\t} );\n\n\t\tthis._dirty = true;\n\n\t}\n\n}\n\nwindow.ModelViewer = ModelViewer;\n"
 
 /***/ }),
 /* 40 */
@@ -594,6 +383,18 @@ __webpack_require__(0)(__webpack_require__(41))
 /***/ (function(module, exports) {
 
 module.exports = "/**\r\n * @author Garrett Johnson / http://gkjohnson.github.io/\r\n * https://github.com/gkjohnson/threejs-model-loader\r\n */\r\n\r\nTHREE.ModelLoader = function ( manager ) {\r\n\r\n\tthis.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;\r\n\r\n\tthis.cachedLoaders = {};\r\n\tthis.loaderMap = {\r\n\r\n\t\t'3mf': '3MFLoader',\r\n\t\t'amf': 'AMFLoader',\r\n\t\t'bvh': 'BVHLoader',\r\n\t\t'assimp': 'AssimpLoader',\r\n\t\t'babylon': 'BabylonLoader',\r\n\t\t'dae': 'ColladaLoader',\r\n\t\t'drc': 'DRACOLoader',\r\n\t\t'fbx': 'FBXLoader',\r\n\t\t'gcode': 'GCodeLoader',\r\n\t\t'gltf': 'GLTFLoader',\r\n\t\t'glb': 'GLTFLoader',\r\n\t\t'kmz': 'KMZLoader',\r\n\t\t'md2': 'MD2Loader',\r\n\t\t'mmd': 'MMDLoader',\r\n\t\t'obj': 'OBJLoader',\r\n\t\t'ply': 'PLYLoader',\r\n\t\t'pcd': 'PCDLoader',\r\n\t\t'prwm': 'PRWMLoader',\r\n\t\t'stl': 'STLLoader',\r\n\t\t'tds': 'TDSLoader',\r\n\t\t'vtk': 'VTKLoader',\r\n\t\t'vtp': 'VTKLoader',\r\n\t\t'x': 'XLoader',\r\n\t\t'zae': 'ColladaArchiveLoader',\r\n\r\n\t};\r\n\r\n};\r\n\r\nTHREE.ModelLoader.prototype = {\r\n\r\n\tconstructor: THREE.ColladaLoader,\r\n\r\n\tformResult: function ( res, extension ) {\r\n\r\n\t\tconst mat = new THREE.MeshBasicMaterial( { color: 0xffffff } );\r\n\t\tlet model = res.scene || res.object || res;\r\n\t\tmodel = model.isBufferGeometry || model.isGeometry ? new THREE.Mesh( model, mat ) : model;\r\n\r\n\t\treturn {\r\n\r\n\t\t\tmodel,\r\n\t\t\textension,\r\n\t\t\toriginalResult: res\r\n\r\n\t\t};\r\n\r\n\t},\r\n\r\n\tgetLoader: function ( loaderName, manager, loadercb ) {\r\n\r\n\t\tloadercb( new THREE[ loaderName ]( manager ) );\r\n\r\n\t},\r\n\r\n\textToLoader: function ( ext, maanger, loadercb, onError ) {\r\n\r\n\t\t// Get the name of the loader we need\r\n\t\text = ext ? ext.toLowerCase() : null;\r\n\t\tvar loaderName = this.loaderMap[ ext ] || null;\r\n\t\tif ( loaderName == null ) {\r\n\r\n\t\t\tonError( new Error( `Model Loader : No loader specified for '${ ext }' extension` ) );\r\n\r\n\t\t\treturn;\r\n\r\n\t\t}\r\n\r\n\t\t// If the loader isn't already cached the lets load it\r\n\t\tvar loader = this.cachedLoaders[ loaderName ] || null;\r\n\r\n\t\tif ( loader != null ) {\r\n\r\n\t\t\tloadercb( loader );\r\n\r\n\t\t} else {\r\n\r\n\t\t\tthis.getLoader( loaderName, this.manager, loader => {\r\n\r\n\t\t\t\tthis.cachedLoaders[ loaderName ] = loader;\r\n\t\t\t\tloadercb( loader );\r\n\r\n\t\t\t} );\r\n\r\n\t\t}\r\n\r\n\t},\r\n\r\n\tload: function ( url, onLoad, onProgress, onError, extOverride = null ) {\r\n\r\n\t\tonError = onError || ( e => console.error( e ) );\r\n\r\n\t\t// Get the extension associated the file so we can get the\r\n\t\t// appropriate loader\r\n\t\tvar extMatches = url.match( /\\.([^\\.\\/\\\\]+)$/ );\r\n\t\tvar urlext = extMatches ? extMatches[ 1 ] : null;\r\n\t\tvar ext = extOverride || urlext;\r\n\r\n\t\tif ( url == null ) {\r\n\r\n\t\t\tonError( new Error( 'Model Loader : No file extension found' ) );\r\n\t\t\treturn;\r\n\r\n\t\t}\r\n\r\n\t\tthis.extToLoader( ext, this.manager, loader => {\r\n\r\n\t\t\t// TODO: set the cross origin etc information\r\n\t\t\tloader.load( url, res => {\r\n\r\n\t\t\t\tonLoad( this.formResult( res ) );\r\n\r\n\t\t\t}, onProgress, onError );\r\n\r\n\t\t}, onError );\r\n\r\n\t},\r\n\r\n\tparse: function ( data, ext, onLoad, onError ) {\r\n\r\n\t\tonError = onError || ( e => console.error( e ) );\r\n\r\n\t\tthis.extToLoader( ext, this.manager, loader => {\r\n\r\n\t\t\tonLoad( this.formResult( loader.parse( data ) ) );\r\n\r\n\t\t}, onError );\r\n\r\n\t}\r\n\r\n};\r\n"
+
+/***/ }),
+/* 42 */
+/***/ (function(module, exports, __webpack_require__) {
+
+__webpack_require__(0)(__webpack_require__(43))
+
+/***/ }),
+/* 43 */
+/***/ (function(module, exports) {
+
+module.exports = "// Converts a datatransfer structer into an object with all paths and files\n// listed out. Returns a promise that resolves with the file structure.\nfunction dataTransferToFiles( dataTransfer ) {\n\n\tif ( ! ( dataTransfer instanceof DataTransfer ) ) {\n\n\t\tthrow new Error( 'Data must be of type \"DataTransfer\"', dataTransfer );\n\n\t}\n\n\tconst files = {};\n\n\t// recurse down the webkit file structure resolving\n\t// the paths to files names to store in the `files`\n\t// object\n\tfunction recurseDirectory( item ) {\n\n\t\tif ( item.isFile ) {\n\n\t\t\treturn new Promise( resolve => {\n\n\t\t\t\titem.file( file => {\n\n\t\t\t\t\tfiles[ item.fullPath ] = file;\n\t\t\t\t\tresolve();\n\n\t\t\t\t} );\n\n\t\t\t} );\n\n\t\t} else {\n\n\t\t\tconst reader = item.createReader();\n\n\t\t\treturn new Promise( resolve => {\n\n\t\t\t\tconst promises = [];\n\t\t\t\treader.readEntries( et => {\n\n\t\t\t\t\tet.forEach( e => {\n\n\t\t\t\t\t\tpromises.push( recurseDirectory( e ) );\n\n\t\t\t\t\t} );\n\n\t\t\t\t\tPromise.all( promises ).then( () => resolve() );\n\n\t\t\t\t} );\n\n\t\t\t} );\n\n\t\t\treturn Promise.all( promises );\n\n\t\t}\n\n\t}\n\n\treturn new Promise( resolve => {\n\n\t\t// Traverse down the tree and add the files into the zip\n\t\tconst dtitems = dataTransfer.items && [ ...dataTransfer.items ];\n\t\tconst dtfiles = [ ...dataTransfer.files ];\n\n\t\tif ( dtitems && dtitems.length && dtitems[ 0 ].webkitGetAsEntry ) {\n\n\t\t\tconst promises = [];\n\t\t\tfor ( let i = 0; i < dtitems.length; i ++ ) {\n\n\t\t\t\tconst item = dtitems[ i ];\n\t\t\t\tconst entry = item.webkitGetAsEntry();\n\n\t\t\t\tpromises.push( recurseDirectory( entry ) );\n\n\t\t\t}\n\t\t\tPromise.all( promises ).then( () => resolve( files ) );\n\n\t\t} else {\n\n\t\t\t// add a '/' prefix to math the file directory entry\n\t\t\t// on webkit browsers\n\t\t\tdtfiles\n\t\t\t\t.filter( f => f.size !== 0 )\n\t\t\t\t.forEach( f => files[ '/' + f.name ] = f );\n\n\t\t\tresolve( files );\n\n\t\t}\n\n\t} );\n\n}\n\nwindow.addEventListener( 'WebComponentsReady', () => {\n\n\tcustomElements.define( 'model-viewer', ModelViewer );\n\tconst errorel = document.getElementById( 'error' );\n\tconst viewer = document.querySelector( 'model-viewer' );\n\tconst bgColors = [\n\t\t'#FFC107',\n\t\t'#F06292',\n\t\t'#009688',\n\t\t'#3F51B5',\n\t\t'#CDDC39'\n\t];\n\n\tviewer.addEventListener( 'error', e => {\n\n\t\terrorel.innerText = e.detail;\n\t\tviewer.src = '';\n\n\t} );\n\tviewer.addEventListener( 'model-change', e => errorel.innerText = '' );\n\n\t// overriding the getLoader function so loaders can be\n\t// loaded as-needed\n\tviewer.modelLoader.getLoader = function ( loaderName, manager, loadercb ) {\n\n\t\tfunction createLoader( ln ) {\n\n\t\t\tln = ln || loaderName;\n\n\t\t\treturn new THREE[ ln ]( manager );\n\n\t\t}\n\n\t\tfunction getSource( name ) {\n\n\t\t\tlet f =\n                        fetch( `../node_modules/three/examples/js/loaders/${ name }.js` )\n                        \t.then( res => res.text() );\n\t\t\tf.then( text => eval( text ) );\n\n\t\t\treturn f;\n\n\t\t}\n\n\t\tif ( THREE[ loaderName ] == null ) {\n\n\t\t\tif ( loaderName === 'OBJLoader2' ) {\n\n\t\t\t\tgetSource( 'LoaderSupport' )\n\t\t\t\t\t.then( () => getSource( loaderName ) )\n\t\t\t\t\t.then( () => loadercb( createLoader() ) );\n\n\t\t\t} else if ( loaderName === 'KMZLoader' ) {\n\n\t\t\t\tgetSource( 'ColladaLoader' )\n\t\t\t\t\t.then( () => getSource( loaderName ) )\n\t\t\t\t\t.then( () => loadercb( createLoader() ) );\n\n\t\t\t} else if ( loaderName === '3MFLoader' ) {\n\n\t\t\t\tgetSource( loaderName )\n\t\t\t\t\t.then( () => loadercb( createLoader( 'ThreeMFLoader' ) ) );\n\n\t\t\t} else {\n\n\t\t\t\tgetSource( loaderName )\n\t\t\t\t\t.then( () => loadercb( createLoader() ) );\n\n\t\t\t}\n\n\t\t} else {\n\n\t\t\tloadercb( createLoader() );\n\n\t\t}\n\n\t};\n\n\tdocument.addEventListener( 'dragover', e => e.preventDefault() );\n\tdocument.addEventListener( 'dragenter', e => e.preventDefault() );\n\tdocument.addEventListener( 'drop', e => {\n\n\t\te.preventDefault();\n\n\t\tconst newcol = bgColors.shift();\n\t\tbgColors.push( newcol );\n\t\tviewer.ambientColor = '#' + new THREE.Color( newcol ).lerp( new THREE.Color( 0xffffff ), 0.7 ).getHexString();\n\t\tviewer.style.backgroundColor = newcol;\n\n\t\t// convert the files\n\t\tdataTransferToFiles( e.dataTransfer )\n\t\t\t.then( files => {\n\n\t\t\t\t// set the loader url modifier to check the list\n\t\t\t\t// of files\n\t\t\t\tviewer.loadingManager.setURLModifier( url => {\n\n\t\t\t\t\t// TODO: This won't work for paths that traverse up\n\t\t\t\t\t// and down (/example/../path/model.ply)\n\t\t\t\t\turl = '/' + url.replace( /^[\\.\\\\\\/]*/, '' );\n\t\t\t\t\tif ( url in files ) {\n\n\t\t\t\t\t\tconst newurl = URL.createObjectURL( files[ url ] );\n\n\t\t\t\t\t\t// revoke the url after it's been used\n\t\t\t\t\t\trequestAnimationFrame( () => URL.revokeObjectURL( newurl ) );\n\n\t\t\t\t\t\treturn newurl;\n\n\t\t\t\t\t}\n\n\t\t\t\t\treturn url;\n\n\t\t\t\t} );\n\n\t\t\t\t// set the source of the element to the most likely intended display model\n\t\t\t\tconst filesNames = Object.keys( files );\n\t\t\t\tconst extregex = new RegExp(\n\t\t\t\t\t`(${ Object\n\t\t\t\t\t\t.keys( viewer.modelLoader.loaderMap )\n\t\t\t\t\t\t.join( '|' )\n\t\t\t\t\t})$`, 'i' );\n\n\t\t\t\tviewer.src =\n                            filesNames\n                            \t.filter( n => extregex.test( n ) )\n                            \t.shift();\n\n\t\t\t} );\n\n\t} );\n\n} );\n"
 
 /***/ })
 /******/ ]);
