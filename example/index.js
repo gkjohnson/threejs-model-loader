@@ -185,19 +185,29 @@ window.addEventListener( 'WebComponentsReady', () => {
 
 				// set the loader url modifier to check the list
 				// of files
+				const fileNames = Object.keys( files );
 				viewer.loadingManager.setURLModifier( url => {
 
-					// TODO: This won't work for paths that traverse up
-					// and down (/example/../path/model.ply)
-					url = '/' + url.replace( /^[\.\\\/]*/, '' );
-					if ( url in files ) {
+					url = url.replace( /^[\.\\\/]*/, '' );
 
-						const newurl = URL.createObjectURL( files[ url ] );
+					// find the matching file given the requested url
+					const fileName = fileNames
+						.filter( name => {
+
+							// check if the end of file and url are the same
+							const len = Math.min( name.length, url.length );
+							return url.substr( url.length - len ) === name.substr( name.length - len );
+
+						} ).pop();
+
+					if ( fileName !== undefined ) {
+
+						const bloburl = URL.createObjectURL( files[ fileName ] );
 
 						// revoke the url after it's been used
-						requestAnimationFrame( () => URL.revokeObjectURL( newurl ) );
+						requestAnimationFrame( () => URL.revokeObjectURL( bloburl ) );
 
-						return newurl;
+						return bloburl;
 
 					}
 
