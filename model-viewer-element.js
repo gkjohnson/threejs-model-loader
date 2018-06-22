@@ -154,7 +154,7 @@ class ModelViewer extends HTMLElement {
 		this._model = null;
 		this._requestId = 0;
 
-		const _do = () => {
+		const _renderLoop = () => {
 
 			if ( this.parentNode ) {
 
@@ -168,10 +168,10 @@ class ModelViewer extends HTMLElement {
 				}
 
 			}
-			this._renderLoopId = requestAnimationFrame( _do );
+			this._renderLoopId = requestAnimationFrame( _renderLoop );
 
 		};
-		_do();
+		_renderLoop();
 
 	}
 
