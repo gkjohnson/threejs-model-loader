@@ -14,9 +14,9 @@ var loader = new THREE.ModelLoader();
 loader.getLoader = function( loaderName, manager, loadercb ) {
 
     function createLoader() {
-    
+
         return new THREE[ loaderName ]( manager );
-        
+
     }
 
     if ( THREE[ loaderName ] == null ) {
@@ -29,9 +29,9 @@ loader.getLoader = function( loaderName, manager, loadercb ) {
 
                 eval( text );
                 loadercb( createLoader() );
-            
+
             });
-            
+
     } else {
 
         loadercb( createLoader() );
@@ -45,7 +45,7 @@ loader.load( '.../model.ply', res => {
     // res.model
     // res.originalResult
     // res.extension
-    
+
 } );
 ```
 
@@ -56,7 +56,7 @@ A function signature that mirrors all the THREE.js geometry loaders. An appriopr
 
 If `extOverride` is set, then that extension is used to select the loader.
 
-`onLoad` is passed an object with values 
+`onLoad` is passed an object with values
 ```js
 {
     model,         // THREE.js Object3D, Group, or Mesh that was loaded
@@ -115,6 +115,16 @@ The color of the ambient light specified with css colors.
 #### show-grid
 
 Show a grid underneath the model.
+
+#### auto-redraw
+
+Automatically redraw the model every frame instead of waiting to be dirtied.
+
+### Functions
+
+#### redraw()
+
+Dirty the renderer so the element will redraw next frame.
 
 ### Events
 

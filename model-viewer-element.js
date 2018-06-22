@@ -70,6 +70,17 @@ class ModelViewer extends HTMLElement {
 
 	}
 
+	get autoRedraw() {
+
+		return this.hasAttribute( 'auto-redraw' ) || false;
+
+	}
+	set autoRedraw( val ) {
+
+		val ? this.setAttribute( 'auto-redraw', true ) : this.removeAttribute( 'auto-redraw' );
+
+	}
+
 	/* Lifecycle Functions */
 	constructor() {
 
@@ -147,9 +158,9 @@ class ModelViewer extends HTMLElement {
 
 			if ( this.parentNode ) {
 
-				this.refresh();
+				this._refresh();
 				this.controls.update();
-				if ( this._dirty ) {
+				if ( this._dirty || this.autoRedraw ) {
 
 					this.renderer.render( scene, camera );
 					this._dirty = false;
@@ -191,9 +202,6 @@ class ModelViewer extends HTMLElement {
 
 		}
 
-		this.refresh();
-		requestAnimationFrame( () => this.refresh() );
-
 	}
 
 	disconnectedCallback() {
@@ -234,7 +242,14 @@ class ModelViewer extends HTMLElement {
 	}
 
 	/* Public API */
-	refresh() {
+	redraw() {
+
+		this._dirty = true;
+
+	}
+
+	/* Private Functions */
+	_refresh() {
 
 		const r = this.renderer;
 		const w = this.clientWidth;
@@ -255,7 +270,6 @@ class ModelViewer extends HTMLElement {
 
 	}
 
-	/* Private Functions */
 	_loadModel( src ) {
 
 		if ( this._prevsrc === src ) return;
