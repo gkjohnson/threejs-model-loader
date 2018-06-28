@@ -91,12 +91,15 @@ class ModelViewer extends HTMLElement {
 		const camera = new THREE.PerspectiveCamera( 75, 1, 0.1, 1000 );
 		camera.position.z = 10;
 
-		const ambientLight = new THREE.AmbientLight( this.ambientColor );
+		const ambientLight = new THREE.HemisphereLight( this.ambientColor, this.ambientColor );
+		ambientLight.intensity = 0.5;
+		ambientLight.position.set( 0, 1, 0 );
 		scene.add( ambientLight );
 
 		// Light setup
 		const dirLight = new THREE.DirectionalLight( 0xffffff );
-		dirLight.position.set( 0, 10, 0 );
+		dirLight.position.set( 4, 10, 4 );
+		dirLight.shadow.bias = - 0.0001;
 		dirLight.shadow.mapSize.width = 2048;
 		dirLight.shadow.mapSize.height = 2048;
 		dirLight.castShadow = true;
@@ -143,14 +146,19 @@ class ModelViewer extends HTMLElement {
 		controls.minDistance = 0.25;
 		controls.addEventListener( 'change', () => this._dirty = true );
 
-		this.rotator = rotator;
-		this.scaleContainer = scaleContainer;
 		this.renderer = renderer;
 		this.camera = camera;
 		this.controls = controls;
+
+		this.scene = scene;
+		this.rotator = rotator;
+		this.scaleContainer = scaleContainer;
+		this.ambientLight = ambientLight;
+		this.directionalLight = dirLight;
+
 		this.plane = plane;
 		this.gridHelper = gridHelper;
-		this.ambientLight = ambientLight;
+
 		this._model = null;
 		this._requestId = 0;
 
@@ -162,6 +170,7 @@ class ModelViewer extends HTMLElement {
 				this.controls.update();
 				if ( this._dirty || this.autoRedraw ) {
 
+					this.directionalLight.castShadow = this.displayShadow;
 					this.renderer.render( scene, camera );
 					this._dirty = false;
 
@@ -298,8 +307,21 @@ class ModelViewer extends HTMLElement {
 
 					if ( this._requestId !== requestId ) return;
 
-					this._addModel( res.model );
+					// The texture's color space is assumed to be
+					// in sRGB, though most of the THREE loaders assume
+					// a Linear color space.
+					res.model.traverse( c => {
 
+						if ( c.material && c.material.map ) {
+
+							c.material.map.encoding = THREE.GammaEncoding;
+							c.material.needsUpdate = true;
+
+						}
+
+					} );
+
+					this._addModel( res.model );
 					this.dispatchEvent( new CustomEvent( 'model-loaded', { bubbles: true, cancelable: true, composed: true } ) );
 
 				}, null, err => {
@@ -350,27 +372,43 @@ class ModelViewer extends HTMLElement {
 		// make sure the obj will cast shadows
 		obj.traverse( c => {
 
-			if ( 'castShadow' in c ) c.castShadow = true;
+			c.castShadow = true;
+			c.receiveShadow = true;
 
 			if ( c instanceof THREE.Mesh ) {
 
-				if ( c.material instanceof THREE.MeshBasicMaterial ) {
+				if ( c.material ) {
 
-					const mat = new THREE.MeshPhongMaterial( { color: 0x888888 } );
-					if ( c.geometry instanceof THREE.BufferGeometry && 'color' in c.geometry.attributes
-                        || c.geometry instanceof THREE.Geometry ) {
+					const mats = Array.isArray( c.material ) ? c.material : [ c.material ];
+					mats.forEach( ( m, i ) => {
 
-						mat.vertexColors = THREE.VertexColors;
+						if ( m instanceof THREE.MeshBasicMaterial ) {
 
-					}
+							const mat = new THREE.MeshPhongMaterial( { color: 0x888888 } );
+							if ( c.geometry instanceof THREE.BufferGeometry && 'color' in c.geometry.attributes
+								|| c.geometry instanceof THREE.Geometry ) {
 
-					if ( c.geometry instanceof THREE.BufferGeometry && ! ( 'normal' in c.geometry.attributes ) ) {
+								mat.vertexColors = THREE.VertexColors;
 
-						c.geometry.computeVertexNormals();
+							}
 
-					}
+							if ( c.geometry instanceof THREE.BufferGeometry && ! ( 'normal' in c.geometry.attributes ) ) {
 
-					c.material = mat;
+								c.geometry.computeVertexNormals();
+
+							}
+
+							mats[ i ] = mat;
+							m = mat;
+
+						}
+
+						m.shadowSide = THREE.DoubleSide;
+
+					} );
+
+					if ( Array.isArray( c.material ) ) c.material = mats;
+					else c.material = mats[ 0 ];
 
 				}
 
