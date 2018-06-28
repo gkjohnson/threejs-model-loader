@@ -103,7 +103,6 @@ class ModelViewer extends HTMLElement {
 		dirLight.shadow.mapSize.width = 2048;
 		dirLight.shadow.mapSize.height = 2048;
 		dirLight.castShadow = true;
-
 		scene.add( dirLight );
 
 		// Containers setup
@@ -133,6 +132,8 @@ class ModelViewer extends HTMLElement {
 		renderer.setClearColor( 0xffffff );
 		renderer.setClearAlpha( 0 );
 		renderer.shadowMap.enabled = true;
+
+		// enable gamma correction before display
 		renderer.gammaOutput = true;
 
 		// Controls setup
