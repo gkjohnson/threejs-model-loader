@@ -133,6 +133,7 @@ class ModelViewer extends HTMLElement {
 		renderer.setClearColor( 0xffffff );
 		renderer.setClearAlpha( 0 );
 		renderer.shadowMap.enabled = true;
+		renderer.gammaOutput = true;
 
 		// Controls setup
 		const controls = new THREE.OrbitControls( camera, renderer.domElement );
@@ -235,6 +236,7 @@ class ModelViewer extends HTMLElement {
 			case 'ambient-color': {
 
 				this.ambientLight.color.set( this.ambientColor );
+				this.ambientLight.groundColor.set( '#000' ).lerp( this.ambientLight.color, 0.25 );
 				break;
 
 			}
