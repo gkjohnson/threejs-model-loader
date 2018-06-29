@@ -1,6 +1,6 @@
 {
   "name": "threejs-model-loader",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "THREE.js Model Loader that delegates to the appropriate geometry loader",
   "main": "ModelLoader.js",
   "scripts": {
