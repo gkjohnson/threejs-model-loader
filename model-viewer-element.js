@@ -91,7 +91,8 @@ class ModelViewer extends HTMLElement {
 		const camera = new THREE.PerspectiveCamera( 75, 1, 0.1, 1000 );
 		camera.position.z = 10;
 
-		const ambientLight = new THREE.HemisphereLight( this.ambientColor, this.ambientColor );
+		const ambientLight = new THREE.HemisphereLight( this.ambientColor, '#000' );
+		ambientLight.groundColor.lerp( ambientLight.color, 0.5 );
 		ambientLight.intensity = 0.5;
 		ambientLight.position.set( 0, 1, 0 );
 		scene.add( ambientLight );
@@ -142,7 +143,7 @@ class ModelViewer extends HTMLElement {
 		controls.zoomSpeed = 5;
 		controls.panSpeed = 2;
 		controls.enableZoom = true;
-		controls.enablePan = true;
+		controls.enablePan = false;
 		controls.enableDamping = false;
 		controls.maxDistance = 50;
 		controls.minDistance = 0.25;
@@ -173,6 +174,26 @@ class ModelViewer extends HTMLElement {
 				if ( this._dirty || this.autoRedraw ) {
 
 					this.directionalLight.castShadow = this.displayShadow;
+
+					if ( this._model && this.displayShadow ) {
+
+						// Update the shadow camera rendering bounds to encapsulate the
+						// model. We use the bounding sphere of the bounding box for
+						// simplicity -- this could be a tighter fit.
+						const bbox = new THREE.Box3().setFromObject( this._model );
+						const sphere = bbox.getBoundingSphere( new THREE.Sphere() );
+						const minmax = sphere.radius;
+						const cam = this.directionalLight.shadow.camera;
+						cam.left = cam.bottom = - minmax;
+						cam.right = cam.top = minmax;
+						cam.updateProjectionMatrix();
+
+						// TODO: Position the camera about the center of the model
+						// because it's possible that the model will be off center
+						// and extend outside of the shadow camera bounds
+
+					}
+
 					this.renderer.render( scene, camera );
 					this._dirty = false;
 
@@ -237,7 +258,7 @@ class ModelViewer extends HTMLElement {
 			case 'ambient-color': {
 
 				this.ambientLight.color.set( this.ambientColor );
-				this.ambientLight.groundColor.set( '#000' ).lerp( this.ambientLight.color, 0.25 );
+				this.ambientLight.groundColor.set( '#000' ).lerp( this.ambientLight.color, 0.5 );
 				break;
 
 			}
@@ -309,20 +330,6 @@ class ModelViewer extends HTMLElement {
 				.load( src, res => {
 
 					if ( this._requestId !== requestId ) return;
-
-					// The texture's color space is assumed to be
-					// in sRGB, though most of the THREE loaders assume
-					// a Linear color space.
-					res.model.traverse( c => {
-
-						if ( c.material && c.material.map ) {
-
-							c.material.map.encoding = THREE.GammaEncoding;
-							c.material.needsUpdate = true;
-
-						}
-
-					} );
 
 					this._addModel( res.model );
 					this.dispatchEvent( new CustomEvent( 'model-loaded', { bubbles: true, cancelable: true, composed: true } ) );
@@ -403,6 +410,25 @@ class ModelViewer extends HTMLElement {
 
 							mats[ i ] = mat;
 							m = mat;
+
+						}
+
+						if ( m instanceof THREE.MeshLambertMaterial ) {
+
+							const mat = new THREE.MeshPhongMaterial();
+							mat.copy( m );
+							mats[ i ] = mat;
+							m = mat;
+
+						}
+
+						if ( m.map ) {
+
+							// The texture's color space is assumed to be
+							// in sRGB, though most of the THREE loaders assume
+							// a Linear color space.
+							m.map.encoding = THREE.GammaEncoding;
+							m.needsUpdate = true;
 
 						}
 
