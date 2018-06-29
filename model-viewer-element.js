@@ -413,6 +413,9 @@ class ModelViewer extends HTMLElement {
 
 						}
 
+						// TODO: Lambert materials don't handle shadows well, so
+						// we replace them here. Remove this once the THREE bug is fixed
+						// Mentioned in https://github.com/mrdoob/three.js/issues/8238
 						if ( m instanceof THREE.MeshLambertMaterial ) {
 
 							const mat = new THREE.MeshPhongMaterial();
