@@ -196,6 +196,7 @@ class ModelViewer extends HTMLElement {
 						dirLight.target.position.copy( center );
 						dirLight.position.copy( center ).add( offset );
 						cam.updateProjectionMatrix();
+
 					}
 
 					this.renderer.render( scene, camera );
