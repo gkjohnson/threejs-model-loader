@@ -105,6 +105,7 @@ class ModelViewer extends HTMLElement {
 		dirLight.shadow.mapSize.height = 2048;
 		dirLight.castShadow = true;
 		scene.add( dirLight );
+		scene.add( dirLight.target );
 
 		// Containers setup
 		const scaleContainer = new THREE.Object3D();
@@ -181,17 +182,20 @@ class ModelViewer extends HTMLElement {
 						// model. We use the bounding sphere of the bounding box for
 						// simplicity -- this could be a tighter fit.
 						const bbox = new THREE.Box3().setFromObject( this._model );
+						const center = bbox.getCenter( new THREE.Vector3() );
 						const sphere = bbox.getBoundingSphere( new THREE.Sphere() );
 						const minmax = sphere.radius;
 						const cam = this.directionalLight.shadow.camera;
 						cam.left = cam.bottom = - minmax;
 						cam.right = cam.top = minmax;
+
+						// Update the camera to focus on the center of the model so the
+						// shadow can encapsulate it
+						const dirLight = this.directionalLight;
+						const offset = dirLight.position.clone().sub( dirLight.target.position );
+						dirLight.target.position.copy( center );
+						dirLight.position.copy( center ).add( offset );
 						cam.updateProjectionMatrix();
-
-						// TODO: Position the camera about the center of the model
-						// because it's possible that the model will be off center
-						// and extend outside of the shadow camera bounds
-
 					}
 
 					this.renderer.render( scene, camera );
@@ -418,8 +422,14 @@ class ModelViewer extends HTMLElement {
 						// Mentioned in https://github.com/mrdoob/three.js/issues/8238
 						if ( m instanceof THREE.MeshLambertMaterial ) {
 
+							// Can't use the `copy` function because the phong material expects
+							// a specular color
+							// https://github.com/mrdoob/three.js/issues/14401
 							const mat = new THREE.MeshPhongMaterial();
-							mat.copy( m );
+							Object.keys( m )
+								.filter( key => key in mat && m[ key ] && key != 'type' )
+								.forEach( key => mat[ key ] = m[ key ] );
+
 							mats[ i ] = mat;
 							m = mat;
 

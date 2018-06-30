@@ -195,6 +195,7 @@ window.addEventListener( 'WebComponentsReady', () => {
 						.filter( name => {
 
 							// check if the end of file and url are the same
+							// TODO: This does not account for `up directory` `../` tokens
 							const len = Math.min( name.length, url.length );
 							return url.substr( url.length - len ) === name.substr( name.length - len );
 
