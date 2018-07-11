@@ -183,21 +183,36 @@ window.addEventListener( 'WebComponentsReady', () => {
 		dataTransferToFiles( e.dataTransfer )
 			.then( files => {
 
+				const cleanFilePath = path => {
+
+					return path
+						.replace( /\\/g, '/' )
+						.split( /\//g )
+						.reduce( ( acc, el ) => {
+
+							if ( el === '..' ) acc.pop();
+							else if ( el !== '.' ) acc.push( el );
+							return acc;
+
+						}, [] )
+						.join( '/' );
+
+				};
+
 				// set the loader url modifier to check the list
 				// of files
-				const fileNames = Object.keys( files );
+				const fileNames = Object.keys( files ).map( n => cleanFilePath( n ) );
 				viewer.loadingManager.setURLModifier( url => {
 
-					url = url.replace( /^[\.\\\/]*/, '' );
-
+					const cleaned = cleanFilePath( url );
 					// find the matching file given the requested url
 					const fileName = fileNames
 						.filter( name => {
 
+							const len = Math.min( name.length, cleaned.length );
+
 							// check if the end of file and url are the same
-							// TODO: This does not account for `up directory` `../` tokens
-							const len = Math.min( name.length, url.length );
-							return url.substr( url.length - len ) === name.substr( name.length - len );
+							return cleaned.substr( cleaned.length - len ) === name.substr( name.length - len );
 
 						} ).pop();
 

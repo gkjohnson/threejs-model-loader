@@ -166,6 +166,8 @@ class ModelViewer extends HTMLElement {
 		this._model = null;
 		this._requestId = 0;
 
+		this.loadingManager.onLoad = () => this._dirty = true;
+
 		const _renderLoop = () => {
 
 			if ( this.parentNode ) {
