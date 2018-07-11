@@ -183,6 +183,7 @@ window.addEventListener( 'WebComponentsReady', () => {
 		dataTransferToFiles( e.dataTransfer )
 			.then( files => {
 
+            	// removes '..' and '.' tokens and normalizes slashes
 				const cleanFilePath = path => {
 
 					return path
@@ -204,8 +205,8 @@ window.addEventListener( 'WebComponentsReady', () => {
 				const fileNames = Object.keys( files ).map( n => cleanFilePath( n ) );
 				viewer.loadingManager.setURLModifier( url => {
 
-					const cleaned = cleanFilePath( url );
 					// find the matching file given the requested url
+					const cleaned = cleanFilePath( url );
 					const fileName = fileNames
 						.filter( name => {
 
