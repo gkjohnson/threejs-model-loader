@@ -2,7 +2,11 @@
   "name": "threejs-model-loader",
   "version": "0.0.6",
   "description": "THREE.js Model Loader that delegates to the appropriate geometry loader",
-  "main": "ModelLoader.js",
+	"main": "ModelLoader.js",
+	"files": [
+		"ModelLoader.js",
+		"model-viewer-element.js"
+	],
   "scripts": {
     "start": "static-server",
     "build": "cd example && webpack"
