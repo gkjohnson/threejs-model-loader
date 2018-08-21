@@ -49,8 +49,6 @@ function dataTransferToFiles( dataTransfer ) {
 
 			} );
 
-			return Promise.all( promises );
-
 		}
 
 	}
