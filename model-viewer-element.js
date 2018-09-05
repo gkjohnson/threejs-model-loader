@@ -392,7 +392,7 @@ class ModelViewer extends HTMLElement {
 			c.castShadow = true;
 			c.receiveShadow = true;
 
-			if ( c instanceof THREE.Mesh ) {
+			if ( c.isMesh ) {
 
 				if ( c.material ) {
 
@@ -402,18 +402,22 @@ class ModelViewer extends HTMLElement {
 						if ( m instanceof THREE.MeshBasicMaterial ) {
 
 							const mat = new THREE.MeshPhongMaterial( { color: 0x888888 } );
-							if ( c.geometry instanceof THREE.BufferGeometry && 'color' in c.geometry.attributes
-								|| c.geometry instanceof THREE.Geometry ) {
+							if (
+								c.geometry.isBufferGeometry && 'color' in c.geometry.attributes
+								|| c.geometry.isGeometry
+							) {
 
 								mat.vertexColors = THREE.VertexColors;
 
 							}
 
-							if ( c.geometry instanceof THREE.BufferGeometry && ! ( 'normal' in c.geometry.attributes ) ) {
+							if ( c.geometry.isBufferGeometry && ! ( 'normal' in c.geometry.attributes ) ) {
 
 								c.geometry.computeVertexNormals();
 
 							}
+
+							mat.map = m.map;
 
 							mats[ i ] = mat;
 							m = mat;
