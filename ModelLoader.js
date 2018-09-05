@@ -30,6 +30,8 @@ THREE.ModelLoader = function ( manager ) {
 		'prwm': 'PRWMLoader',
 		'stl': 'STLLoader',
 		'tds': 'TDSLoader',
+		'vrml': 'VRMLLoader',
+		'wrl': 'VRMLLoader',
 		'vtk': 'VTKLoader',
 		'vtp': 'VTKLoader',
 		'x': 'XLoader',
