@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Converted source files to use modules.
 - Added UMD variants to the `umd` folder.
 
+## [0.0.9] - 2018-08-05
 ### Fixed
 - Textures are no longer discarded when the material is a MeshBasicMaterial in the web component.
 
