@@ -41,63 +41,20 @@ class ModelLoader {
 
 		};
 
-	}
-
-	formResult( res, extension ) {
-
-		const mat = new THREE.MeshBasicMaterial( { color: 0xffffff } );
-		let model = res.scene || res.object || res;
-		model = model.isBufferGeometry || model.isGeometry ? new THREE.Mesh( model, mat ) : model;
-
-		return {
-
-			model,
-			extension,
-			originalResult: res
-
-		};
+		this.loaderClasses = THREE;
 
 	}
 
-	getLoader( loaderName, manager, loadercb ) {
+	/* Override-able Interface */
+	// function that creates a loader instance and passes it back to
+	// the `loaderCb`.
+	getLoader( loaderName, manager, loaderCb ) {
 
-		loadercb( new THREE[ loaderName ]( manager ) );
-
-	}
-
-	extToLoader( ext, maanger, loadercb, onError ) {
-
-		// Get the name of the loader we need
-		ext = ext ? ext.toLowerCase() : null;
-		var loaderName = this.loaderMap[ ext ] || null;
-		if ( loaderName == null ) {
-
-			onError( new Error( `Model Loader : No loader specified for '${ ext }' extension` ) );
-
-			return;
-
-		}
-
-		// If the loader isn't already cached the lets load it
-		var loader = this.cachedLoaders[ loaderName ] || null;
-
-		if ( loader != null ) {
-
-			loadercb( loader );
-
-		} else {
-
-			this.getLoader( loaderName, this.manager, loader => {
-
-				this.cachedLoaders[ loaderName ] = loader;
-				loadercb( loader );
-
-			} );
-
-		}
+		loaderCb( new this.loaderClasses[ loaderName ]( manager ) );
 
 	}
 
+	/* Public Functions */
 	load( url, onLoad, onProgress, onError, extOverride = null ) {
 
 		onError = onError || ( e => console.error( e ) );
@@ -115,7 +72,7 @@ class ModelLoader {
 
 		}
 
-		this.extToLoader( ext, this.manager, loader => {
+		this.extToLoader( ext, loader => {
 
 			// TODO: set the cross origin etc information
 			loader.load( url, res => {
@@ -137,6 +94,59 @@ class ModelLoader {
 			onLoad( this.formResult( loader.parse( data ) ) );
 
 		}, onError );
+
+	}
+
+	/* Private Functions */
+	// Forms the resultant object from a load to normalize the return format.
+	formResult( res, extension ) {
+
+		const mat = new THREE.MeshBasicMaterial( { color: 0xffffff } );
+		let model = res.scene || res.object || res;
+		model = model.isBufferGeometry || model.isGeometry ? new THREE.Mesh( model, mat ) : model;
+
+		return {
+
+			model,
+			extension,
+			originalResult: res
+
+		};
+
+	}
+
+	// Creates a loader based on the provided extension. The loader is passed
+	// into the `loaderCb` callback function
+	extToLoader( ext, loaderCb, onError ) {
+
+		// Get the name of the loader we need
+		ext = ext ? ext.toLowerCase() : null;
+		var loaderName = this.loaderMap[ ext ] || null;
+		if ( loaderName == null ) {
+
+			onError( new Error( `Model Loader : No loader specified for '${ ext }' extension` ) );
+
+			return;
+
+		}
+
+		// If the loader isn't already cached the lets load it
+		var loader = this.cachedLoaders[ loaderName ] || null;
+
+		if ( loader != null ) {
+
+			loaderCb( loader );
+
+		} else {
+
+			this.getLoader( loaderName, this.manager, loader => {
+
+				this.cachedLoaders[ loaderName ] = loader;
+				loaderCb( loader );
+
+			} );
+
+		}
 
 	}
 
