@@ -5,11 +5,12 @@
   "main": "ModelLoader.js",
   "files": [
     "ModelLoader.js",
-    "model-viewer-element.js"
+		"model-viewer-element.js",
+		"umd/*"
   ],
   "scripts": {
-    "start": "static-server",
-    "build": "cd example && webpack"
+    "start": "concurrently --kill-others \"rollup -c -w\" \"static-server\"",
+    "build": "rollup -c && cd example && webpack"
   },
   "repository": {
     "type": "git",
@@ -25,6 +26,7 @@
     "@webcomponents/webcomponentsjs": "^2.0.0",
     "collada-archive-loader": "^0.1.1",
     "eslint-config-mdcs": "^4.2.3",
+    "rollup": "^0.66.6",
     "script-loader": "^0.7.2",
     "static-server": "^2.2.1",
     "three": "^0.92.0",
@@ -42,5 +44,8 @@
     "geometry",
     "loader",
     "javascript"
-  ]
+  ],
+  "dependencies": {
+    "concurrently": "^4.0.1"
+  }
 }
