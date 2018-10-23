@@ -1,3 +1,6 @@
+import * as THREE from 'three';
+import ModelLoader from './ModelLoader.js';
+
 // model-viewer element
 // Loads and displays a 3D model
 
@@ -21,7 +24,7 @@ class ModelViewer extends HTMLElement {
 
 	get modelLoader() {
 
-		return this._modelLoader = this._modelLoader || new THREE.ModelLoader( this.loadingManager );
+		return this._modelLoader = this._modelLoader || new ModelLoader( this.loadingManager );
 
 	}
 

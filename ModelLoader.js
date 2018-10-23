@@ -2,8 +2,9 @@
  * @author Garrett Johnson / http://gkjohnson.github.io/
  * https://github.com/gkjohnson/threejs-model-loader
  */
+import * as THREE from 'three';
 
-THREE.ModelLoader =
+export default
 class ModelLoader {
 
 	constructor( manager ) {
@@ -11,6 +12,7 @@ class ModelLoader {
 		this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;
 
 		this.cachedLoaders = {};
+		this.loaderClasses = THREE;
 		this.loaderMap = {
 
 			'3mf': '3MFLoader',
@@ -40,8 +42,6 @@ class ModelLoader {
 			'zae': 'ColladaArchiveLoader',
 
 		};
-
-		this.loaderClasses = THREE;
 
 	}
 
@@ -150,4 +150,4 @@ class ModelLoader {
 
 	}
 
-}
+};
