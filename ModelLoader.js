@@ -3,48 +3,47 @@
  * https://github.com/gkjohnson/threejs-model-loader
  */
 
-THREE.ModelLoader = function ( manager ) {
+THREE.ModelLoader =
+class ModelLoader {
 
-	this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;
+	constructor( manager ) {
 
-	this.cachedLoaders = {};
-	this.loaderMap = {
+		this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;
 
-		'3mf': '3MFLoader',
-		'amf': 'AMFLoader',
-		'bvh': 'BVHLoader',
-		'assimp': 'AssimpLoader',
-		'babylon': 'BabylonLoader',
-		'dae': 'ColladaLoader',
-		'drc': 'DRACOLoader',
-		'fbx': 'FBXLoader',
-		'gcode': 'GCodeLoader',
-		'gltf': 'GLTFLoader',
-		'glb': 'GLTFLoader',
-		'kmz': 'KMZLoader',
-		'md2': 'MD2Loader',
-		'mmd': 'MMDLoader',
-		'obj': 'OBJLoader',
-		'ply': 'PLYLoader',
-		'pcd': 'PCDLoader',
-		'prwm': 'PRWMLoader',
-		'stl': 'STLLoader',
-		'tds': 'TDSLoader',
-		'vtk': 'VTKLoader',
-		'vtp': 'VTKLoader',
-		'wrl': 'VRMLLoader',
-		'x': 'XLoader',
-		'zae': 'ColladaArchiveLoader',
+		this.cachedLoaders = {};
+		this.loaderMap = {
 
-	};
+			'3mf': '3MFLoader',
+			'amf': 'AMFLoader',
+			'bvh': 'BVHLoader',
+			'assimp': 'AssimpLoader',
+			'babylon': 'BabylonLoader',
+			'dae': 'ColladaLoader',
+			'drc': 'DRACOLoader',
+			'fbx': 'FBXLoader',
+			'gcode': 'GCodeLoader',
+			'gltf': 'GLTFLoader',
+			'glb': 'GLTFLoader',
+			'kmz': 'KMZLoader',
+			'md2': 'MD2Loader',
+			'mmd': 'MMDLoader',
+			'obj': 'OBJLoader',
+			'ply': 'PLYLoader',
+			'pcd': 'PCDLoader',
+			'prwm': 'PRWMLoader',
+			'stl': 'STLLoader',
+			'tds': 'TDSLoader',
+			'vtk': 'VTKLoader',
+			'vtp': 'VTKLoader',
+			'wrl': 'VRMLLoader',
+			'x': 'XLoader',
+			'zae': 'ColladaArchiveLoader',
 
-};
+		};
 
-THREE.ModelLoader.prototype = {
+	}
 
-	constructor: THREE.ColladaLoader,
-
-	formResult: function ( res, extension ) {
+	formResult( res, extension ) {
 
 		const mat = new THREE.MeshBasicMaterial( { color: 0xffffff } );
 		let model = res.scene || res.object || res;
@@ -58,15 +57,15 @@ THREE.ModelLoader.prototype = {
 
 		};
 
-	},
+	}
 
-	getLoader: function ( loaderName, manager, loadercb ) {
+	getLoader( loaderName, manager, loadercb ) {
 
 		loadercb( new THREE[ loaderName ]( manager ) );
 
-	},
+	}
 
-	extToLoader: function ( ext, maanger, loadercb, onError ) {
+	extToLoader( ext, maanger, loadercb, onError ) {
 
 		// Get the name of the loader we need
 		ext = ext ? ext.toLowerCase() : null;
@@ -97,9 +96,9 @@ THREE.ModelLoader.prototype = {
 
 		}
 
-	},
+	}
 
-	load: function ( url, onLoad, onProgress, onError, extOverride = null ) {
+	load( url, onLoad, onProgress, onError, extOverride = null ) {
 
 		onError = onError || ( e => console.error( e ) );
 
@@ -127,9 +126,9 @@ THREE.ModelLoader.prototype = {
 
 		}, onError );
 
-	},
+	}
 
-	parse: function ( data, ext, onLoad, onError ) {
+	parse( data, ext, onLoad, onError ) {
 
 		onError = onError || ( e => console.error( e ) );
 
@@ -141,4 +140,4 @@ THREE.ModelLoader.prototype = {
 
 	}
 
-};
+}
