@@ -2,10 +2,9 @@
   "name": "threejs-model-loader",
   "version": "0.0.8",
   "description": "THREE.js Model Loader that delegates to the appropriate geometry loader",
-  "main": "ModelLoader.js",
+  "main": "src/ModelLoader.js",
   "files": [
-    "ModelLoader.js",
-		"model-viewer-element.js",
+		"src/*",
 		"umd/*"
   ],
   "scripts": {
