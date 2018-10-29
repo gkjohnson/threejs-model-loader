@@ -82,6 +82,10 @@ See `load` for documentation on what the `onLoad` function is passed.
 Function used to return an instance of a particular loader. Once the loader has been created, pass it into `loadercb`. See above code snippet for an example.
 
 ### Members
+##### ModelLoader.loaderClasses
+
+Object with a map of loader name to loader class to instantiate. Used only for the default implementation of the `getLoader` function. Defaults to the available `THREE` object where loaders are typically available.
+
 ##### ModeLoader.loaderMap
 
 List of `extension` to `loaderName`, used to select the loader for each extension. The list can be modified by adding and removing keys from the list. Every loader is expected to be found on the `THREE` object.
