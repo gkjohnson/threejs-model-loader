@@ -2,98 +2,113 @@
  * @author Garrett Johnson / http://gkjohnson.github.io/
  * https://github.com/gkjohnson/threejs-model-loader
  */
-import * as THREE from 'three';
+import { DefaultLoadingManager, MeshPhongMaterial, Mesh } from 'three';
+
+const loaderMap = {
+
+	'3mf': '3MFLoader',
+	'amf': 'AMFLoader',
+	'bvh': 'BVHLoader',
+	'assimp': 'AssimpLoader',
+	'babylon': 'BabylonLoader',
+	'dae': 'ColladaLoader',
+	'drc': 'DRACOLoader',
+	'fbx': 'FBXLoader',
+	'gcode': 'GCodeLoader',
+	'gltf': 'GLTFLoader',
+	'glb': 'GLTFLoader',
+	'kmz': 'KMZLoader',
+	'md2': 'MD2Loader',
+	'mmd': 'MMDLoader',
+	'obj': 'OBJLoader',
+	'ply': 'PLYLoader',
+	'pcd': 'PCDLoader',
+	'prwm': 'PRWMLoader',
+	'stl': 'STLLoader',
+	'tds': 'TDSLoader',
+	'vtk': 'VTKLoader',
+	'vtp': 'VTKLoader',
+	'wrl': 'VRMLLoader',
+	'x': 'XLoader',
+	'zae': 'ColladaArchiveLoader',
+
+};
 
 export default
 class ModelLoader {
 
+	static get ExtensionToThreeLoader() {
+
+		return loaderMap;
+
+	}
+
 	constructor( manager ) {
 
-		this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;
-
-		this.cachedLoaders = {};
-		this.loaderClasses = THREE;
-		this.loaderMap = {
-
-			'3mf': '3MFLoader',
-			'amf': 'AMFLoader',
-			'bvh': 'BVHLoader',
-			'assimp': 'AssimpLoader',
-			'babylon': 'BabylonLoader',
-			'dae': 'ColladaLoader',
-			'drc': 'DRACOLoader',
-			'fbx': 'FBXLoader',
-			'gcode': 'GCodeLoader',
-			'gltf': 'GLTFLoader',
-			'glb': 'GLTFLoader',
-			'kmz': 'KMZLoader',
-			'md2': 'MD2Loader',
-			'mmd': 'MMDLoader',
-			'obj': 'OBJLoader',
-			'ply': 'PLYLoader',
-			'pcd': 'PCDLoader',
-			'prwm': 'PRWMLoader',
-			'stl': 'STLLoader',
-			'tds': 'TDSLoader',
-			'vtk': 'VTKLoader',
-			'vtp': 'VTKLoader',
-			'wrl': 'VRMLLoader',
-			'x': 'XLoader',
-			'zae': 'ColladaArchiveLoader',
-
-		};
+		this.manager = ( manager !== undefined ) ? manager : DefaultLoadingManager;
+		this.loaderCallbacks = {};
 
 	}
 
 	/* Override-able Interface */
 	// function that creates a loader instance and passes it back to
 	// the `loaderCb`.
-	getLoader( loaderName, manager, loaderCb ) {
+	getLoadCallback( ext, done ) {
 
-		loaderCb( new this.loaderClasses[ loaderName ]( manager ) );
+		done( this.loaderCallbacks[ ext ] || null );
 
 	}
 
 	/* Public Functions */
-	load( url, onLoad, onProgress, onError, extOverride = null ) {
+	load( url, onLoad, onProgress, onError, options = {} ) {
 
 		onError = onError || ( e => console.error( e ) );
 
 		// Get the extension associated the file so we can get the
 		// appropriate loader
 		var extMatches = url.match( /\.([^\.\/\\]+)$/ );
-		var urlext = extMatches ? extMatches[ 1 ] : null;
-		var ext = extOverride || urlext;
+		var urlExt = extMatches ? extMatches[ 1 ] : null;
+		var ext = options.extension || urlExt;
 
-		if ( url == null ) {
+		if ( ext == null ) {
 
-			onError( new Error( 'Model Loader : No file extension found' ) );
-			return;
+			onError( new Error( 'ModelLoader : No file extension found' ) );
+
+		} else {
+
+			this.getLoadCallback( ext, func => {
+
+				if ( func ) {
+
+					func( manager, res => {
+
+						onLoad( this.formResult( res ) );
+
+					}, onProgress, onError, options );
+
+				} else {
+
+					onError( new Error( `ModelLoader: No load callback provided for extension '${ ext }'.` ) );
+
+				}
+
+			} );
 
 		}
 
-		this.extToLoader( ext, loader => {
-
-			// TODO: set the cross origin etc information
-			loader.load( url, res => {
-
-				onLoad( this.formResult( res ) );
-
-			}, onProgress, onError );
-
-		}, onError );
-
 	}
 
-	parse( data, ext, onLoad, onError ) {
+	parse( data, extension, onLoad, onError, options = {} ) {
 
-		onError = onError || ( e => console.error( e ) );
+		options = Object.assign( {
 
-		this.extToLoader( ext, this.manager, loader => {
+			extension
 
-			onLoad( this.formResult( loader.parse( data ) ) );
+		}, options );
 
-		}, onError );
+		const blob = new Blob( [ data ] );
+		const url = URL.createObjectURL( blob );
+		this.load( url, onLoad, undefined, onError, options );
 
 	}
 
@@ -101,9 +116,13 @@ class ModelLoader {
 	// Forms the resultant object from a load to normalize the return format.
 	formResult( res, extension ) {
 
-		const mat = new THREE.MeshBasicMaterial( { color: 0xffffff } );
 		let model = res.scene || res.object || res;
-		model = model.isBufferGeometry || model.isGeometry ? new THREE.Mesh( model, mat ) : model;
+		if ( model.isBufferGeometry || model.isGeometry ) {
+
+			const material = new MeshPhongMaterial( { color: 0xffffff } );
+			model = new Mesh( model, material );
+
+		}
 
 		return {
 
@@ -112,41 +131,6 @@ class ModelLoader {
 			originalResult: res
 
 		};
-
-	}
-
-	// Creates a loader based on the provided extension. The loader is passed
-	// into the `loaderCb` callback function
-	extToLoader( ext, loaderCb, onError ) {
-
-		// Get the name of the loader we need
-		ext = ext ? ext.toLowerCase() : null;
-		var loaderName = this.loaderMap[ ext ] || null;
-		if ( loaderName == null ) {
-
-			onError( new Error( `Model Loader : No loader specified for '${ ext }' extension` ) );
-
-			return;
-
-		}
-
-		// If the loader isn't already cached the lets load it
-		var loader = this.cachedLoaders[ loaderName ] || null;
-
-		if ( loader != null ) {
-
-			loaderCb( loader );
-
-		} else {
-
-			this.getLoader( loaderName, this.manager, loader => {
-
-				this.cachedLoaders[ loaderName ] = loader;
-				loaderCb( loader );
-
-			} );
-
-		}
 
 	}
 
