@@ -24,7 +24,31 @@ class ModelViewer extends HTMLElement {
 
 	get modelLoader() {
 
-		return this._modelLoader = this._modelLoader || new ModelLoader( this.loadingManager );
+		if ( !this._modelLoader ) {
+
+			const loader = new ModelLoader( this.loadingManager );
+			loader.getLoadCallback = function ( ext, done ) {
+
+				const loaderName = ModelLoader.ExtensionToThreeLoader[ loaderName ];
+				if ( loaderName in THREE ) {
+
+					done( function( url, manager, onLoad, onProgress, onError ) {
+
+						new THREE[ loaderName ]( manager ).load( url, onLoad, onProgress, onError );
+
+					} );
+
+				} else {
+
+					done( null );
+
+				}
+
+			}
+
+		}
+
+		return this._modelLoader;
 
 	}
 
