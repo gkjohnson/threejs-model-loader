@@ -234,7 +234,7 @@ window.addEventListener( 'WebComponentsReady', () => {
 				const filesNames = Object.keys( files );
 				const extregex = new RegExp(
 					`(${ Object
-						.keys( viewer.modelLoader.loaderMap )
+						.keys( viewer.modelLoader.constructor.ExtensionToThreeLoader )
 						.join( '|' )
 					})$`, 'i' );
 

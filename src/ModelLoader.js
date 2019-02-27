@@ -80,7 +80,7 @@ class ModelLoader {
 
 				if ( func ) {
 
-					func( url, manager, res => {
+					func( url, this.manager, res => {
 
 						onLoad( this.formResult( res ) );
 
