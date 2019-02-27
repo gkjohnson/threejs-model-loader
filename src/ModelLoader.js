@@ -34,6 +34,14 @@ const loaderMap = {
 
 };
 
+function extractExtension( url ) {
+
+	var extMatches = url.match( /\.([^\.\/\\]+)$/ );
+	var urlExt = extMatches ? extMatches[ 1 ] : null;
+	return urlExt;
+
+}
+
 export default
 class ModelLoader {
 
@@ -59,6 +67,12 @@ class ModelLoader {
 
 	}
 
+	canLoadModel( urlOrExt ) {
+
+		return urlOrExt in this.loaderCallbacks || extractExtension( urlOrExt ) in this.loaderCallbacks;
+
+	}
+
 	/* Public Functions */
 	load( url, onLoad, onProgress, onError, options = {} ) {
 
@@ -66,8 +80,7 @@ class ModelLoader {
 
 		// Get the extension associated the file so we can get the
 		// appropriate loader
-		var extMatches = url.match( /\.([^\.\/\\]+)$/ );
-		var urlExt = extMatches ? extMatches[ 1 ] : null;
+		var urlExt = extractExtension( url );
 		var ext = options.extension || urlExt;
 
 		if ( ext == null ) {

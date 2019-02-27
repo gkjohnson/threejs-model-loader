@@ -232,15 +232,9 @@ window.addEventListener( 'WebComponentsReady', () => {
 
 				// set the source of the element to the most likely intended display model
 				const filesNames = Object.keys( files );
-				const extregex = new RegExp(
-					`(${ Object
-						.keys( viewer.modelLoader.constructor.ExtensionToThreeLoader )
-						.join( '|' )
-					})$`, 'i' );
-
 				viewer.src =
                             filesNames
-                            	.filter( n => extregex.test( n ) )
+                            	.filter( n => viewer.modelLoader.canLoadModel( n ) )
                             	.shift();
 
 			} );

@@ -46,6 +46,18 @@ class ModelViewer extends HTMLElement {
 
 			}
 
+			loader.canLoadModel = function ( urlOrExt ) {
+
+				const extregex = new RegExp(
+					`(${ Object
+						.keys( ModelLoader.ExtensionToThreeLoader )
+						.join( '|' )
+					})$`, 'i' );
+
+				return extregex.test( urlOrExt );
+
+			}
+
 			this._modelLoader = loader;
 
 		}
