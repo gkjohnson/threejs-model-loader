@@ -46,6 +46,8 @@ class ModelViewer extends HTMLElement {
 
 			}
 
+			this._modelLoader = loader;
+
 		}
 
 		return this._modelLoader;
