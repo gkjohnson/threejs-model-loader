@@ -93,11 +93,11 @@ class ModelLoader {
 
 				if ( func ) {
 
-					func( url, this.manager, res => {
+					func.call(this, ( url, this.manager, res => {
 
 						onLoad( this.formResult( res ) );
 
-					}, onProgress, onError, options );
+					}, onProgress, onError, options ) );
 
 				} else {
 
@@ -121,7 +121,12 @@ class ModelLoader {
 
 		const blob = new Blob( [ data ] );
 		const url = URL.createObjectURL( blob );
-		this.load( url, onLoad, undefined, onError, options );
+		this.load( url, function( ...args ) {
+
+			URL.revokeObjectURL( url );
+			onLoad( ...args );
+
+		}, undefined, onError, options );
 
 	}
 
