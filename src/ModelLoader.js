@@ -93,11 +93,11 @@ class ModelLoader {
 
 				if ( func ) {
 
-					func.call(this, ( url, this.manager, res => {
+					func.call(this, url, this.manager, res => {
 
 						onLoad( this.formResult( res ) );
 
-					}, onProgress, onError, options ) );
+					}, onProgress, onError, options );
 
 				} else {
 
