@@ -3,45 +3,24 @@
 [![npm version](https://img.shields.io/npm/v/threejs-model-loader.svg?style=flat-square)](https://www.npmjs.com/package/threejs-model-loader)
 [![lgtm code quality](https://img.shields.io/lgtm/grade/javascript/g/gkjohnson/threejs-model-loader.svg?style=flat-square&label=code-quality)](https://lgtm.com/projects/g/gkjohnson/threejs-model-loader/)
 
-THREE.js Model Loader for delegating to the appropriate geometry loader. Uses the file's extension to determine which THREE geometry loader to use.
+THREE.js Model Loader for delegating to the appropriate and normalizing the result of different geometry loaders. Uses the file's extension to an appropriate loader function.
 
 [Drag and drop example](https://gkjohnson.github.io/threejs-model-loader/example/index.bundle.html)
 
-## THREE.ModelLoader
+## ModelLoader
 
 ```js
-var loader = new THREE.ModelLoader();
+import PLYLoader from 'three/examples/loaders/PLYLoader';
+import ModelLoader from 'threejs-model-loader';
 
-// overriding the getLoader function so loaders can be
-// loaded as-needed
-loader.getLoader = function( loaderName, manager, loadercb ) {
+var loader = new ModelLoader();
 
-    function createLoader() {
+// register the function to load ply files
+loader.loaderCallbacks[ 'ply' ] = function( url, manager, onLoad, onProgress, onError ) {
 
-        return new THREE[ loaderName ]( manager );
+	new PLYLoader( manager ).load( url, onLoad, onProgress, onError );
 
-    }
-
-    if ( THREE[ loaderName ] == null ) {
-
-        // fetch the loader script from the server and run it
-        // if it's not already on the page
-        fetch(`.../node_modules/three/examples/js/loaders/${ loaderName }.js`)
-            .then(res => res.text())
-            .then(tex => {
-
-                eval( text );
-                loadercb( createLoader() );
-
-            });
-
-    } else {
-
-        loadercb( createLoader() );
-
-    }
-
-}
+} );
 
 loader.load( '.../model.ply', res => {
 
@@ -52,14 +31,49 @@ loader.load( '.../model.ply', res => {
 } );
 ```
 
+### Static Members
+#### ModelLoader.ExtensionToThreeLoader
+
+A map of file extensions to THREE Loader names that are provided with the THREE project. When using imports or require the loaders are not available so these loader functions must be registered manually.
+
+```js
+{
+
+	'dae': 'ColladaLoader',
+	'fbx': 'FBXLoader',
+	'gcode': 'GCodeLoader',
+	'gltf': 'GLTFLoader',
+
+	// ...
+
+}
+```
+
+### Members
+#### loaderCallbacks
+
+An object that maps file extension to loader function callback. Defaults to empty. Add functions to the map to register load callbacks.
+
+```js
+{
+	ply:  function( url, manager, onLoad, onProgress, onError ) {
+
+		new PLYLoader( manager ).load( url, onLoad, onProgress, onError );
+
+	}
+}
+```
+
 ### Functions
-##### ModelLoader.load(path, onLoad, onProgress, onError, extOverride)
+#### constructor(manager)
 
-A function signature that mirrors all the THREE.js geometry loaders. An appriopriate loader is selected based on the file name.
+Instantiate the `ModelLoader` with a `THREE.LoadingManager`.
 
-If `extOverride` is set, then that extension is used to select the loader.
+#### load(path, onLoad, onProgress, onError, options)
 
-`onLoad` is passed an object with values
+A function signature that mirrors all the THREE.js geometry loaders. An appropriate loader is selected from the loaderCallbacks based on the file extension.
+
+`onLoad` is passed an object with following values.
 ```js
 {
     model,         // THREE.js Object3D, Group, or Mesh that was loaded
@@ -68,32 +82,31 @@ If `extOverride` is set, then that extension is used to select the loader.
 }
 ```
 
-##### ModelLoader.parse(data, ext, onLoad, onError)
+##### options
+###### extension
 
-Takes the `data` to parse into geometry and the associated file extension in `ext`.
+An override to the detected file extension.
 
-The model is returned asynchronously in `onLoad` to support async fetching of the loaders.
+#### parse(data, extension, onLoad, onError, options)
+
+Takes the `data` to parse into geometry and the associated file extension.
+
+The model is returned asynchronously in `onLoad`.
 
 See `load` for documentation on what the `onLoad` function is passed.
 
-### Override-able Methods
-##### ModelLoader.getLoader(loaderName, manager, loadercb)
+### Override-able Functions
+#### getLoaderCallback(extension, done)
 
-Function used to return an instance of a particular loader. Once the loader has been created, pass it into `loadercb`. See above code snippet for an example.
+Function used to get the function used to load the geometry.
 
-### Members
-##### ModelLoader.loaderClasses
+By default this looks the given extension up in the `loaderCallbacks` object.
 
-Object with a map of loader name to loader class to instantiate. Used only for the default implementation of the `getLoader` function. Defaults to the available `THREE` object where loaders are typically available.
+#### canLoadModel(extension)
 
-##### ModeLoader.loaderMap
+Returns whether or not the ModelLoader can load a file with the provided extension.
 
-List of `extension` to `loaderName`, used to select the loader for each extension. The list can be modified by adding and removing keys from the list. Every loader is expected to be found on the `THREE` object.
-
-```js
-loader.loadMap[ 'obj' ] = 'OBJLoader';
-delete loader.loadMap[ 'stl' ];
-```
+By default this checks if the given extension is in the `loaderCallbacks` object.
 
 ## model-viewer Element
 ```html
