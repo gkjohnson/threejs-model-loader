@@ -29,7 +29,45 @@
 
 		get modelLoader() {
 
-			return this._modelLoader = this._modelLoader || new ModelLoader( this.loadingManager );
+			if ( !this._modelLoader ) {
+
+				const loader = new ModelLoader( this.loadingManager );
+				loader.getLoadCallback = function ( ext, done ) {
+
+					const loaderName = ModelLoader.ExtensionToThreeLoader[ ext ];
+					if ( loaderName in THREE ) {
+
+						done( function( url, manager, onLoad, onProgress, onError ) {
+
+							new THREE[ loaderName ]( manager ).load( url, onLoad, onProgress, onError );
+
+						} );
+
+					} else {
+
+						done( null );
+
+					}
+
+				};
+
+				loader.canLoadModel = function ( urlOrExt ) {
+
+					const extregex = new RegExp(
+						`(${ Object
+						.keys( ModelLoader.ExtensionToThreeLoader )
+						.join( '|' )
+					})$`, 'i' );
+
+					return extregex.test( urlOrExt );
+
+				};
+
+				this._modelLoader = loader;
+
+			}
+
+			return this._modelLoader;
 
 		}
 
