@@ -7,7 +7,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 ### Changed
 - Refactored the loader functions to use functions instead of relying on a global THREE object to make it work more easily with modules.
-- 
 
 ## [0.1.0] - 2018-10-29
 ### Changed
